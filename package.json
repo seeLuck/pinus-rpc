@@ -1,5 +1,5 @@
 {
-	"name": "pomelo-rpc",
+	"name": "async-pomelo-rpc",
 	"version": "1.0.7",
 	"dependencies": {
 		"mqtt-connection": "3.0.0",
