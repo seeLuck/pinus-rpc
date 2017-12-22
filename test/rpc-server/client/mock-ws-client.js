@@ -1,6 +1,6 @@
-var sioClient = require('socket.io-client');
+var sioClient = require'socket.io-client';
 var EventEmitter = require('events').EventEmitter;
-var util = require('util');
+var util = require'util';
 var utils = require('../../../lib/util/utils');
 
 var Client = function() {

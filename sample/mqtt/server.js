@@ -1,5 +1,5 @@
-var net = require('net'),
-	mqttCon = require('mqtt-connection'),
+var net = require'net',
+	mqttCon = require'mqtt-connection',
 	server = new net.Server();
 var num = 300;
 var len = num * num;

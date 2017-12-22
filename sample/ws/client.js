@@ -1,4 +1,4 @@
-var WebSocket = require('ws');
+var WebSocket = require'ws';
 var ws = new WebSocket('ws://localhost:3331');
 
 ws.on('open', function open() {
