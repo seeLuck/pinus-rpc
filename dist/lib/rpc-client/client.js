@@ -19,7 +19,7 @@ var STATE_CLOSED = 3; // client has closed
 /**
  * RPC Client Class
  */
-class Client {
+class RpcClient {
     constructor(opts) {
         opts = opts || {};
         this._context = opts.context;
@@ -220,7 +220,7 @@ class Client {
     }
     ;
 }
-exports.Client = Client;
+exports.RpcClient = RpcClient;
 /**
  * Create mail station.
  *
@@ -427,7 +427,7 @@ var insertProxy = function (proxies, namespace, serverType, proxy) {
  * @return {Object}      client instance.
  */
 function create(opts) {
-    return new Client(opts);
+    return new RpcClient(opts);
 }
 exports.create = create;
 ;

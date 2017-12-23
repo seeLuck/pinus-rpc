@@ -36,7 +36,7 @@ export class Gateway extends EventEmitter
     };
 
 
-    stop()
+    stop(force : boolean)
     {
         if (!this.started || this.stoped)
         {

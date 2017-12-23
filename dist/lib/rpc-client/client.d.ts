@@ -1,7 +1,7 @@
 /**
  * RPC Client Class
  */
-export declare class Client {
+export declare class RpcClient {
     _context: any;
     _routeContext: any;
     router: any;
@@ -121,5 +121,5 @@ export declare class Client {
  *                       opts.mailBoxFactory: (optional) mail box factory instance.
  * @return {Object}      client instance.
  */
-export declare function create(opts: any): Client;
+export declare function create(opts: any): RpcClient;
 export { create as MQTTMailbox } from './mailboxes/mqtt-mailbox';

@@ -20,7 +20,7 @@ var STATE_CLOSED = 3; // client has closed
 /**
  * RPC Client Class
  */
-export class Client
+export class RpcClient
 {
     _context: any;
     _routeContext: any;
@@ -510,7 +510,7 @@ var insertProxy = function (proxies, namespace, serverType, proxy)
  */
 export function create(opts)
 {
-    return new Client(opts);
+    return new RpcClient(opts);
 };
 
 // module.exports.WSMailbox from ('./mailboxes/ws-mailbox'); // socket.io 

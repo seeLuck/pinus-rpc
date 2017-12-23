@@ -25,7 +25,7 @@ class Gateway extends events_1.EventEmitter {
         });
     }
     ;
-    stop() {
+    stop(force) {
         if (!this.started || this.stoped) {
             return;
         }
