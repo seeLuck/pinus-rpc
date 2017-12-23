@@ -18,14 +18,14 @@ export declare class Client {
      *
      * @param cb {Function} cb(err)
      */
-    start: (cb: any) => void;
+    start(cb: any): void;
     /**
      * Stop the rpc client.
      *
      * @param  {Boolean} force
      * @return {Void}
      */
-    stop: (force: any) => void;
+    stop(force: any): void;
     /**
      * Add a new proxy to the rpc client which would overrid the proxy under the
      * same key.
@@ -33,43 +33,43 @@ export declare class Client {
      * @param {Object} record proxy description record, format:
      *                        {namespace, serverType, path}
      */
-    addProxy: (record: any) => void;
+    addProxy(record: any): void;
     /**
      * Batch version for addProxy.
      *
      * @param {Array} records list of proxy description record
      */
-    addProxies: (records: any) => void;
+    addProxies(records: any): void;
     /**
      * Add new remote server to the rpc client.
      *
      * @param {Object} server new server information
      */
-    addServer: (server: any) => void;
+    addServer(server: any): void;
     /**
      * Batch version for add new remote server.
      *
      * @param {Array} servers server info list
      */
-    addServers: (servers: any) => void;
+    addServers(servers: any): void;
     /**
      * Remove remote server from the rpc client.
      *
      * @param  {String|Number} id server id
      */
-    removeServer: (id: any) => void;
+    removeServer(id: any): void;
     /**
      * Batch version for remove remote server.
      *
      * @param  {Array} ids remote server id list
      */
-    removeServers: (ids: any) => void;
+    removeServers(ids: any): void;
     /**
      * Replace remote servers.
      *
      * @param {Array} servers server info list
      */
-    replaceServers: (servers: any) => void;
+    replaceServers(servers: any): void;
     /**
      * Do the rpc invoke directly.
      *
@@ -78,7 +78,7 @@ export declare class Client {
      *    {serverType: serverType, service: serviceName, method: methodName, args: arguments}
      * @param cb {Function} cb(err, ...)
      */
-    rpcInvoke: (serverId: any, msg: any, cb: any) => void;
+    rpcInvoke(serverId: any, msg: any, cb: any): void;
     /**
      * Add rpc before filter.
      *
@@ -86,7 +86,7 @@ export declare class Client {
      *
      * @api public
      */
-    before: (filter: any) => void;
+    before(filter: any): void;
     /**
      * Add rpc after filter.
      *
@@ -94,7 +94,7 @@ export declare class Client {
      *
      * @api public
      */
-    after: (filter: any) => void;
+    after(filter: any): void;
     /**
      * Add rpc filter.
      *
@@ -102,7 +102,7 @@ export declare class Client {
      *
      * @api public
      */
-    filter: (filter: any) => void;
+    filter(filter: any): void;
     /**
      * Set rpc filter error handler.
      *
@@ -110,7 +110,7 @@ export declare class Client {
      *
      * @api public
      */
-    setErrorHandler: (handler: any) => void;
+    setErrorHandler(handler: any): void;
 }
 /**
  * RPC client factory method.

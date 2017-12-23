@@ -7,6 +7,7 @@ export class OutputBuffer
 {
 	count = 0;
 	size: number;
+	offset: number = 0;
 	buf: Buffer;
 	constructor(size)
 	{
@@ -19,30 +20,30 @@ export class OutputBuffer
 		return this.buf;
 	}
 
-	getLength = function ()
+	getLength()
 	{
 		return this.count;
 	}
 
-	write = function (data, offset, len)
+	write(data, offset, len)
 	{
 		this.ensureCapacity(len);
 		this.buf.write(data, offset, len);
 		this.count += len;
 	}
 
-	writeBoolean = function (v)
+	writeBoolean(v)
 	{
 		this.writeByte(v ? 1 : 0);
 	}
 
-	writeByte = function (v)
+	writeByte(v)
 	{
 		this.ensureCapacity(1);
 		this.buf.writeUInt8(v, this.count++);
 	}
 
-	writeBytes = function (bytes)
+	writeBytes(bytes)
 	{
 		var len = bytes.length;
 		this.ensureCapacity(len + 4);
@@ -53,59 +54,59 @@ export class OutputBuffer
 		}
 	}
 
-	writeChar = function (v)
+	writeChar(v)
 	{
 		this.writeByte(v);
 	}
 
-	writeChars = function (bytes)
+	writeChars(bytes)
 	{
 		this.writeBytes(bytes);
 	}
 
-	writeDouble = function (v)
+	writeDouble(v)
 	{
 		this.ensureCapacity(8);
 		this.buf.writeDoubleLE(v, this.count);
 		this.count += 8;
 	}
 
-	writeFloat = function (v)
+	writeFloat(v)
 	{
 		this.ensureCapacity(4);
 		this.buf.writeFloatLE(v, this.count);
 		this.count += 4;
 	}
 
-	writeInt = function (v)
+	writeInt(v)
 	{
 		this.ensureCapacity(4);
 		this.buf.writeInt32LE(v, this.count);
 		this.count += 4;
 	}
 
-	writeShort = function (v)
+	writeShort(v)
 	{
 		this.ensureCapacity(2);
 		this.buf.writeInt16LE(v, this.count);
 		this.count += 2;
 	}
 
-	writeUInt = function (v)
+	writeUInt(v)
 	{
 		this.ensureCapacity(4);
 		this.buf.writeUInt32LE(v, this.count);
 		this.count += 4;
 	}
 
-	writeUShort = function (v)
+	writeUShort(v)
 	{
 		this.ensureCapacity(2);
 		this.buf.writeUInt16LE(v, this.count);
 		this.count += 2;
 	}
 
-	writeString = function (str)
+	writeString(str)
 	{
 		var len = Buffer.byteLength(str);
 		this.ensureCapacity(len + 4);
@@ -114,7 +115,7 @@ export class OutputBuffer
 		this.count += len;
 	}
 
-	writeObject = function (object)
+	writeObject(object)
 	{
 		var type = Utils.getType(object);
 		// console.log('writeObject type %s', type);
@@ -190,7 +191,7 @@ export class OutputBuffer
 		}
 	}
 
-	ensureCapacity = function (len)
+	ensureCapacity(len)
 	{
 		var minCapacity = this.count + len;
 		if (minCapacity > this.buf.length)
@@ -199,7 +200,7 @@ export class OutputBuffer
 		}
 	}
 
-	grow = function (minCapacity)
+	grow(minCapacity)
 	{
 		var oldCapacity = this.buf.length;
 		var newCapacity = oldCapacity << 1;
@@ -219,7 +220,7 @@ export class OutputBuffer
 		this.buf.copy(newBuf);
 		this.buf = newBuf;
 	}
-	getBuffer = function ()
+	getBuffer()
 	{
 		return this.buf.slice(0, this.offset);
 	}

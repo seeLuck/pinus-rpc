@@ -21,175 +21,6 @@ var STATE_CLOSED = 3; // client has closed
  */
 class Client {
     constructor(opts) {
-        /**
-         * Start the rpc client which would try to connect the remote servers and
-         * report the result by cb.
-         *
-         * @param cb {Function} cb(err)
-         */
-        this.start = function (cb) {
-            if (this.state > STATE_INITED) {
-                cb(new Error('rpc client has started.'));
-                return;
-            }
-            var self = this;
-            this._station.start(function (err) {
-                if (err) {
-                    logger.error('[pomelo-rpc] client start fail for ' + err.stack);
-                    return cb(err);
-                }
-                self._station.on('error', failureProcess_1.failureProcess.bind(self._station));
-                self.state = STATE_STARTED;
-                cb();
-            });
-        };
-        /**
-         * Stop the rpc client.
-         *
-         * @param  {Boolean} force
-         * @return {Void}
-         */
-        this.stop = function (force) {
-            if (this.state !== STATE_STARTED) {
-                logger.warn('[pomelo-rpc] client is not running now.');
-                return;
-            }
-            this.state = STATE_CLOSED;
-            this._station.stop(force);
-        };
-        /**
-         * Add a new proxy to the rpc client which would overrid the proxy under the
-         * same key.
-         *
-         * @param {Object} record proxy description record, format:
-         *                        {namespace, serverType, path}
-         */
-        this.addProxy = function (record) {
-            if (!record) {
-                return;
-            }
-            var proxy = generateProxy(this, record, this._context);
-            if (!proxy) {
-                return;
-            }
-            insertProxy(this.proxies, record.namespace, record.serverType, proxy);
-        };
-        /**
-         * Batch version for addProxy.
-         *
-         * @param {Array} records list of proxy description record
-         */
-        this.addProxies = function (records) {
-            if (!records || !records.length) {
-                return;
-            }
-            for (var i = 0, l = records.length; i < l; i++) {
-                this.addProxy(records[i]);
-            }
-        };
-        /**
-         * Add new remote server to the rpc client.
-         *
-         * @param {Object} server new server information
-         */
-        this.addServer = function (server) {
-            this._station.addServer(server);
-        };
-        /**
-         * Batch version for add new remote server.
-         *
-         * @param {Array} servers server info list
-         */
-        this.addServers = function (servers) {
-            this._station.addServers(servers);
-        };
-        /**
-         * Remove remote server from the rpc client.
-         *
-         * @param  {String|Number} id server id
-         */
-        this.removeServer = function (id) {
-            this._station.removeServer(id);
-        };
-        /**
-         * Batch version for remove remote server.
-         *
-         * @param  {Array} ids remote server id list
-         */
-        this.removeServers = function (ids) {
-            this._station.removeServers(ids);
-        };
-        /**
-         * Replace remote servers.
-         *
-         * @param {Array} servers server info list
-         */
-        this.replaceServers = function (servers) {
-            this._station.replaceServers(servers);
-        };
-        /**
-         * Do the rpc invoke directly.
-         *
-         * @param serverId {String} remote server id
-         * @param msg {Object} rpc message. Message format:
-         *    {serverType: serverType, service: serviceName, method: methodName, args: arguments}
-         * @param cb {Function} cb(err, ...)
-         */
-        this.rpcInvoke = function (serverId, msg, cb) {
-            var rpcDebugLog = this.rpcDebugLog;
-            var tracer = null;
-            if (rpcDebugLog) {
-                tracer = new tracer_1.Tracer(this.opts.rpcLogger, this.opts.rpcDebugLog, this.opts.clientId, serverId, msg);
-                tracer.info('client', __filename, 'rpcInvoke', 'the entrance of rpc invoke');
-            }
-            if (this.state !== STATE_STARTED) {
-                tracer && tracer.error('client', __filename, 'rpcInvoke', 'fail to do rpc invoke for client is not running');
-                logger.error('[pomelo-rpc] fail to do rpc invoke for client is not running');
-                cb(new Error('[pomelo-rpc] fail to do rpc invoke for client is not running'));
-                return;
-            }
-            this._station.dispatch(tracer, serverId, msg, this.opts, cb);
-        };
-        /**
-         * Add rpc before filter.
-         *
-         * @param filter {Function} rpc before filter function.
-         *
-         * @api public
-         */
-        this.before = function (filter) {
-            this._station.before(filter);
-        };
-        /**
-         * Add rpc after filter.
-         *
-         * @param filter {Function} rpc after filter function.
-         *
-         * @api public
-         */
-        this.after = function (filter) {
-            this._station.after(filter);
-        };
-        /**
-         * Add rpc filter.
-         *
-         * @param filter {Function} rpc filter function.
-         *
-         * @api public
-         */
-        this.filter = function (filter) {
-            this._station.filter(filter);
-        };
-        /**
-         * Set rpc filter error handler.
-         *
-         * @param handler {Function} rpc filter error handler function.
-         *
-         * @api public
-         */
-        this.setErrorHandler = function (handler) {
-            this._station.handleError = handler;
-        };
         opts = opts || {};
         this._context = opts.context;
         this._routeContext = opts.routeContext;
@@ -203,6 +34,189 @@ class Client {
         this.proxies = {};
         this._station = createStation(opts);
         this.state = STATE_INITED;
+    }
+    ;
+    /**
+     * Start the rpc client which would try to connect the remote servers and
+     * report the result by cb.
+     *
+     * @param cb {Function} cb(err)
+     */
+    start(cb) {
+        if (this.state > STATE_INITED) {
+            cb(new Error('rpc client has started.'));
+            return;
+        }
+        var self = this;
+        this._station.start(function (err) {
+            if (err) {
+                logger.error('[pomelo-rpc] client start fail for ' + err.stack);
+                return cb(err);
+            }
+            self._station.on('error', failureProcess_1.failureProcess.bind(self._station));
+            self.state = STATE_STARTED;
+            cb();
+        });
+    }
+    ;
+    /**
+     * Stop the rpc client.
+     *
+     * @param  {Boolean} force
+     * @return {Void}
+     */
+    stop(force) {
+        if (this.state !== STATE_STARTED) {
+            logger.warn('[pomelo-rpc] client is not running now.');
+            return;
+        }
+        this.state = STATE_CLOSED;
+        this._station.stop(force);
+    }
+    ;
+    /**
+     * Add a new proxy to the rpc client which would overrid the proxy under the
+     * same key.
+     *
+     * @param {Object} record proxy description record, format:
+     *                        {namespace, serverType, path}
+     */
+    addProxy(record) {
+        if (!record) {
+            return;
+        }
+        var proxy = generateProxy(this, record, this._context);
+        if (!proxy) {
+            return;
+        }
+        insertProxy(this.proxies, record.namespace, record.serverType, proxy);
+    }
+    ;
+    /**
+     * Batch version for addProxy.
+     *
+     * @param {Array} records list of proxy description record
+     */
+    addProxies(records) {
+        if (!records || !records.length) {
+            return;
+        }
+        for (var i = 0, l = records.length; i < l; i++) {
+            this.addProxy(records[i]);
+        }
+    }
+    ;
+    /**
+     * Add new remote server to the rpc client.
+     *
+     * @param {Object} server new server information
+     */
+    addServer(server) {
+        this._station.addServer(server);
+    }
+    ;
+    /**
+     * Batch version for add new remote server.
+     *
+     * @param {Array} servers server info list
+     */
+    addServers(servers) {
+        this._station.addServers(servers);
+    }
+    ;
+    /**
+     * Remove remote server from the rpc client.
+     *
+     * @param  {String|Number} id server id
+     */
+    removeServer(id) {
+        this._station.removeServer(id);
+    }
+    ;
+    /**
+     * Batch version for remove remote server.
+     *
+     * @param  {Array} ids remote server id list
+     */
+    removeServers(ids) {
+        this._station.removeServers(ids);
+    }
+    ;
+    /**
+     * Replace remote servers.
+     *
+     * @param {Array} servers server info list
+     */
+    replaceServers(servers) {
+        this._station.replaceServers(servers);
+    }
+    ;
+    /**
+     * Do the rpc invoke directly.
+     *
+     * @param serverId {String} remote server id
+     * @param msg {Object} rpc message. Message format:
+     *    {serverType: serverType, service: serviceName, method: methodName, args: arguments}
+     * @param cb {Function} cb(err, ...)
+     */
+    rpcInvoke(serverId, msg, cb) {
+        var rpcDebugLog = this.rpcDebugLog;
+        var tracer = null;
+        if (rpcDebugLog) {
+            tracer = new tracer_1.Tracer(this.opts.rpcLogger, this.opts.rpcDebugLog, this.opts.clientId, serverId, msg);
+            tracer.info('client', __filename, 'rpcInvoke', 'the entrance of rpc invoke');
+        }
+        if (this.state !== STATE_STARTED) {
+            tracer && tracer.error('client', __filename, 'rpcInvoke', 'fail to do rpc invoke for client is not running');
+            logger.error('[pomelo-rpc] fail to do rpc invoke for client is not running');
+            cb(new Error('[pomelo-rpc] fail to do rpc invoke for client is not running'));
+            return;
+        }
+        this._station.dispatch(tracer, serverId, msg, this.opts, cb);
+    }
+    ;
+    /**
+     * Add rpc before filter.
+     *
+     * @param filter {Function} rpc before filter function.
+     *
+     * @api public
+     */
+    before(filter) {
+        this._station.before(filter);
+    }
+    ;
+    /**
+     * Add rpc after filter.
+     *
+     * @param filter {Function} rpc after filter function.
+     *
+     * @api public
+     */
+    after(filter) {
+        this._station.after(filter);
+    }
+    ;
+    /**
+     * Add rpc filter.
+     *
+     * @param filter {Function} rpc filter function.
+     *
+     * @api public
+     */
+    filter(filter) {
+        this._station.filter(filter);
+    }
+    ;
+    /**
+     * Set rpc filter error handler.
+     *
+     * @param handler {Function} rpc filter error handler function.
+     *
+     * @api public
+     */
+    setErrorHandler(handler) {
+        this._station.handleError = handler;
     }
     ;
 }

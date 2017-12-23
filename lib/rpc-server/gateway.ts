@@ -36,7 +36,7 @@ export class Gateway extends EventEmitter
     };
 
 
-    stop = function ()
+    stop()
     {
         if (!this.started || this.stoped)
         {
@@ -49,7 +49,7 @@ export class Gateway extends EventEmitter
         } catch (err) { }
     };
 
-    start = function ()
+    start()
     {
         if (this.started)
         {

@@ -15,12 +15,12 @@ export class InputBuffer
 		this.count = buffer.length;
 	}
 
-	read = function ()
+	read()
 	{
 		return this.readByte();
 	}
 
-	readBoolean = function ()
+	readBoolean()
 	{
 		var r = this.read();
 		if (r < 0)
@@ -31,13 +31,13 @@ export class InputBuffer
 		return (r != 0);
 	}
 
-	readByte = function ()
+	readByte()
 	{
 		this.check(1);
 		return this.buf.readUInt8(this.pos++);
 	}
 
-	readBytes = function ()
+	readBytes()
 	{
 		var len = this.readInt();
 		this.check(len);
@@ -46,12 +46,12 @@ export class InputBuffer
 		return r;
 	}
 
-	readChar = function ()
+	readChar()
 	{
 		return this.readByte();
 	}
 
-	readDouble = function ()
+	readDouble()
 	{
 		this.check(8);
 		var r = this.buf.readDoubleLE(this.pos);
@@ -59,7 +59,7 @@ export class InputBuffer
 		return r;
 	}
 
-	readFloat = function ()
+	readFloat()
 	{
 		this.check(4);
 		var r = this.buf.readFloatLE(this.pos);
@@ -67,7 +67,7 @@ export class InputBuffer
 		return r;
 	}
 
-	readInt = function ()
+	readInt()
 	{
 		this.check(4);
 		var r = this.buf.readInt32LE(this.pos);
@@ -75,7 +75,7 @@ export class InputBuffer
 		return r;
 	}
 
-	readShort = function ()
+	readShort()
 	{
 		this.check(2);
 		var r = this.buf.readInt16LE(this.pos);
@@ -83,7 +83,7 @@ export class InputBuffer
 		return r;
 	}
 
-	readUInt = function ()
+	readUInt()
 	{
 		this.check(4);
 		var r = this.buf.readUInt32LE(this.pos);
@@ -91,7 +91,7 @@ export class InputBuffer
 		return r;
 	}
 
-	readUShort = function ()
+	readUShort()
 	{
 		this.check(2);
 		var r = this.buf.readUInt16LE(this.pos);
@@ -99,7 +99,7 @@ export class InputBuffer
 		return r;
 	}
 
-	readString = function ()
+	readString()
 	{
 		var len = this.readInt();
 		this.check(len);
@@ -108,7 +108,7 @@ export class InputBuffer
 		return r;
 	}
 
-	readObject = function ()
+	readObject()
 	{
 		var type = this.readShort();
 		var instance = null;
@@ -165,7 +165,7 @@ export class InputBuffer
 		return instance;
 	}
 
-	check = function (len)
+	check(len)
 	{
 		if (this.pos + len > this.count)
 		{

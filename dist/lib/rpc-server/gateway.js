@@ -10,26 +10,6 @@ class Gateway extends events_1.EventEmitter {
         super();
         this.started = false;
         this.stoped = false;
-        this.stop = function () {
-            if (!this.started || this.stoped) {
-                return;
-            }
-            this.stoped = true;
-            try {
-                this.acceptor.close();
-            }
-            catch (err) { }
-        };
-        this.start = function () {
-            if (this.started) {
-                throw new Error('gateway already start.');
-            }
-            this.started = true;
-            var self = this;
-            this.acceptor.on('error', self.emit.bind(self, 'error'));
-            this.acceptor.on('closed', self.emit.bind(self, 'closed'));
-            this.acceptor.listen(this.port);
-        };
         this.opts = opts || {};
         this.port = opts.port || 3050;
         this.started = false;
@@ -43,6 +23,28 @@ class Gateway extends events_1.EventEmitter {
         this.acceptor = this.acceptorFactory.create(opts, function (tracer, msg, cb) {
             dispatcher.route(tracer, msg, cb);
         });
+    }
+    ;
+    stop() {
+        if (!this.started || this.stoped) {
+            return;
+        }
+        this.stoped = true;
+        try {
+            this.acceptor.close();
+        }
+        catch (err) { }
+    }
+    ;
+    start() {
+        if (this.started) {
+            throw new Error('gateway already start.');
+        }
+        this.started = true;
+        var self = this;
+        this.acceptor.on('error', self.emit.bind(self, 'error'));
+        this.acceptor.on('closed', self.emit.bind(self, 'closed'));
+        this.acceptor.listen(this.port);
     }
     ;
 }

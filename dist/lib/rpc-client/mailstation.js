@@ -7,7 +7,6 @@ const events_1 = require("events");
 const defaultMailboxFactory = require("./mailbox");
 const constants_1 = require("../util/constants");
 const utils = require("../util/utils");
-const util = require("util");
 var STATE_INITED = 1; // station has inited
 var STATE_STARTED = 2; // station has started
 var STATE_CLOSED = 3; // station has closed
@@ -16,303 +15,317 @@ var STATE_CLOSED = 3; // station has closed
  *
  * @param {Object} opts construct parameters
  */
-var MailStation = function (opts) {
-    events_1.EventEmitter.call(this);
-    this.opts = opts;
-    this.servers = {}; // remote server info map, key: server id, value: info
-    this.serversMap = {}; // remote server info map, key: serverType, value: servers array
-    this.onlines = {}; // remote server online map, key: server id, value: 0/offline 1/online
-    this.mailboxFactory = opts.mailboxFactory || defaultMailboxFactory;
-    // filters
-    this.befores = [];
-    this.afters = [];
-    // pending request queues
-    this.pendings = {};
-    this.pendingSize = opts.pendingSize || constants_1.constants.DEFAULT_PARAM.DEFAULT_PENDING_SIZE;
-    // connecting remote server mailbox map
-    this.connecting = {};
-    // working mailbox map
-    this.mailboxes = {};
-    this.state = STATE_INITED;
-};
-util.inherits(MailStation, events_1.EventEmitter);
-var pro = MailStation.prototype;
-/**
- * Init and start station. Connect all mailbox to remote servers.
- *
- * @param  {Function} cb(err) callback function
- * @return {Void}
- */
-pro.start = function (cb) {
-    if (this.state > STATE_INITED) {
-        cb(new Error('station has started.'));
-        return;
+class MailStation extends events_1.EventEmitter {
+    constructor(opts) {
+        super();
+        this.servers = {}; // remote server info map, key: server id, value: info
+        this.serversMap = {}; // remote server info map, key: serverType, value: servers array
+        this.onlines = {}; // remote server online map, key: server id, value: 0/offline 1/online
+        // filters
+        this.befores = [];
+        this.afters = [];
+        // pending request queues
+        this.pendings = {};
+        // connecting remote server mailbox map
+        this.connecting = {};
+        // working mailbox map
+        this.mailboxes = {};
+        this.state = STATE_INITED;
+        this.opts = opts;
+        this.mailboxFactory = opts.mailboxFactory || defaultMailboxFactory;
+        this.pendingSize = opts.pendingSize || constants_1.constants.DEFAULT_PARAM.DEFAULT_PENDING_SIZE;
     }
-    var self = this;
-    process.nextTick(function () {
-        self.state = STATE_STARTED;
-        cb();
-    });
-};
-/**
- * Stop station and all its mailboxes
- *
- * @param  {Boolean} force whether stop station forcely
- * @return {Void}
- */
-pro.stop = function (force) {
-    if (this.state !== STATE_STARTED) {
-        logger.warn('[pomelo-rpc] client is not running now.');
-        return;
+    ;
+    /**
+     * Init and start station. Connect all mailbox to remote servers.
+     *
+     * @param  {Function} cb(err) callback function
+     * @return {Void}
+     */
+    start(cb) {
+        if (this.state > STATE_INITED) {
+            cb(new Error('station has started.'));
+            return;
+        }
+        var self = this;
+        process.nextTick(function () {
+            self.state = STATE_STARTED;
+            cb();
+        });
     }
-    this.state = STATE_CLOSED;
-    var self = this;
-    function closeAll() {
-        for (var id in self.mailboxes) {
-            self.mailboxes[id].close();
+    ;
+    /**
+     * Stop station and all its mailboxes
+     *
+     * @param  {Boolean} force whether stop station forcely
+     * @return {Void}
+     */
+    stop(force) {
+        if (this.state !== STATE_STARTED) {
+            logger.warn('[pomelo-rpc] client is not running now.');
+            return;
+        }
+        this.state = STATE_CLOSED;
+        var self = this;
+        function closeAll() {
+            for (var id in self.mailboxes) {
+                self.mailboxes[id].close();
+            }
+        }
+        if (force) {
+            closeAll();
+        }
+        else {
+            setTimeout(closeAll, constants_1.constants.DEFAULT_PARAM.GRACE_TIMEOUT);
         }
     }
-    if (force) {
-        closeAll();
-    }
-    else {
-        setTimeout(closeAll, constants_1.constants.DEFAULT_PARAM.GRACE_TIMEOUT);
-    }
-};
-/**
- * Add a new server info into the mail station and clear
- * the blackhole associated with the server id if any before.
- *
- * @param {Object} serverInfo server info such as {id, host, port}
- */
-pro.addServer = function (serverInfo) {
-    if (!serverInfo || !serverInfo.id) {
-        return;
-    }
-    var id = serverInfo.id;
-    var type = serverInfo.serverType;
-    this.servers[id] = serverInfo;
-    this.onlines[id] = 1;
-    if (!this.serversMap[type]) {
-        this.serversMap[type] = [];
-    }
-    if (this.serversMap[type].indexOf(id) < 0) {
-        this.serversMap[type].push(id);
-    }
-    this.emit('addServer', id);
-};
-/**
- * Batch version for add new server info.
- *
- * @param {Array} serverInfos server info list
- */
-pro.addServers = function (serverInfos) {
-    if (!serverInfos || !serverInfos.length) {
-        return;
-    }
-    for (var i = 0, l = serverInfos.length; i < l; i++) {
-        this.addServer(serverInfos[i]);
-    }
-};
-/**
- * Remove a server info from the mail station and remove
- * the mailbox instance associated with the server id.
- *
- * @param  {String|Number} id server id
- */
-pro.removeServer = function (id) {
-    this.onlines[id] = 0;
-    var mailbox = this.mailboxes[id];
-    if (mailbox) {
-        mailbox.close();
-        delete this.mailboxes[id];
-    }
-    this.emit('removeServer', id);
-};
-/**
- * Batch version for remove remote servers.
- *
- * @param  {Array} ids server id list
- */
-pro.removeServers = function (ids) {
-    if (!ids || !ids.length) {
-        return;
-    }
-    for (var i = 0, l = ids.length; i < l; i++) {
-        this.removeServer(ids[i]);
-    }
-};
-/**
- * Clear station infomation.
- *
- */
-pro.clearStation = function () {
-    this.onlines = {};
-    this.serversMap = {};
-};
-/**
- * Replace remote servers info.
- *
- * @param {Array} serverInfos server info list
- */
-pro.replaceServers = function (serverInfos) {
-    this.clearStation();
-    if (!serverInfos || !serverInfos.length) {
-        return;
-    }
-    for (var i = 0, l = serverInfos.length; i < l; i++) {
-        var id = serverInfos[i].id;
-        var type = serverInfos[i].serverType;
+    ;
+    /**
+     * Add a new server info into the mail station and clear
+     * the blackhole associated with the server id if any before.
+     *
+     * @param {Object} serverInfo server info such as {id, host, port}
+     */
+    addServer(serverInfo) {
+        if (!serverInfo || !serverInfo.id) {
+            return;
+        }
+        var id = serverInfo.id;
+        var type = serverInfo.serverType;
+        this.servers[id] = serverInfo;
         this.onlines[id] = 1;
         if (!this.serversMap[type]) {
             this.serversMap[type] = [];
         }
-        this.servers[id] = serverInfos[i];
         if (this.serversMap[type].indexOf(id) < 0) {
             this.serversMap[type].push(id);
         }
+        this.emit('addServer', id);
     }
-};
-/**
- * Dispatch rpc message to the mailbox
- *
- * @param  {Object}   tracer   rpc debug tracer
- * @param  {String}   serverId remote server id
- * @param  {Object}   msg      rpc invoke message
- * @param  {Object}   opts     rpc invoke option args
- * @param  {Function} cb       callback function
- * @return {Void}
- */
-pro.dispatch = function (tracer, serverId, msg, opts, cb) {
-    tracer && tracer.info('client', __filename, 'dispatch', 'dispatch rpc message to the mailbox');
-    tracer && (tracer.cb = cb);
-    if (this.state !== STATE_STARTED) {
-        tracer && tracer.error('client', __filename, 'dispatch', 'client is not running now');
-        logger.error('[pomelo-rpc] client is not running now.');
-        this.emit('error', constants_1.constants.RPC_ERROR.SERVER_NOT_STARTED, tracer, serverId, msg, opts);
-        return;
-    }
-    var self = this;
-    var mailbox = this.mailboxes[serverId];
-    if (!mailbox) {
-        tracer && tracer.debug('client', __filename, 'dispatch', 'mailbox is not exist');
-        // try to connect remote server if mailbox instance not exist yet
-        if (!lazyConnect(tracer, this, serverId, this.mailboxFactory, cb)) {
-            tracer && tracer.error('client', __filename, 'dispatch', 'fail to find remote server:' + serverId);
-            logger.error('[pomelo-rpc] fail to find remote server:' + serverId);
-            self.emit('error', constants_1.constants.RPC_ERROR.NO_TRAGET_SERVER, tracer, serverId, msg, opts);
-        }
-        // push request to the pending queue
-        addToPending(tracer, this, serverId, arguments);
-        return;
-    }
-    if (this.connecting[serverId]) {
-        tracer && tracer.debug('client', __filename, 'dispatch', 'request add to connecting');
-        // if the mailbox is connecting to remote server
-        addToPending(tracer, this, serverId, arguments);
-        return;
-    }
-    var send = function (tracer, err, serverId, msg, opts) {
-        tracer && tracer.info('client', __filename, 'send', 'get corresponding mailbox and try to send message');
-        var mailbox = self.mailboxes[serverId];
-        if (err) {
-            return errorHandler(tracer, self, err, serverId, msg, opts, true, cb);
-        }
-        if (!mailbox) {
-            tracer && tracer.error('client', __filename, 'send', 'can not find mailbox with id:' + serverId);
-            logger.error('[pomelo-rpc] could not find mailbox with id:' + serverId);
-            self.emit('error', constants_1.constants.RPC_ERROR.FAIL_FIND_MAILBOX, tracer, serverId, msg, opts);
+    ;
+    /**
+     * Batch version for add new server info.
+     *
+     * @param {Array} serverInfos server info list
+     */
+    addServers(serverInfos) {
+        if (!serverInfos || !serverInfos.length) {
             return;
         }
-        mailbox.send(tracer, msg, opts, function (tracer_send, send_err, args) {
-            // var tracer_send = arguments[0];
-            // var send_err = arguments[1];
-            if (send_err) {
-                logger.error('[pomelo-rpc] fail to send message %s', send_err.stack || send_err.message);
-                self.emit('error', constants_1.constants.RPC_ERROR.FAIL_SEND_MESSAGE, tracer, serverId, msg, opts);
-                cb && cb(send_err);
-                // utils.applyCallback(cb, send_err);
+        for (var i = 0, l = serverInfos.length; i < l; i++) {
+            this.addServer(serverInfos[i]);
+        }
+    }
+    ;
+    /**
+     * Remove a server info from the mail station and remove
+     * the mailbox instance associated with the server id.
+     *
+     * @param  {String|Number} id server id
+     */
+    removeServer(id) {
+        this.onlines[id] = 0;
+        var mailbox = this.mailboxes[id];
+        if (mailbox) {
+            mailbox.close();
+            delete this.mailboxes[id];
+        }
+        this.emit('removeServer', id);
+    }
+    ;
+    /**
+     * Batch version for remove remote servers.
+     *
+     * @param  {Array} ids server id list
+     */
+    removeServers(ids) {
+        if (!ids || !ids.length) {
+            return;
+        }
+        for (var i = 0, l = ids.length; i < l; i++) {
+            this.removeServer(ids[i]);
+        }
+    }
+    ;
+    /**
+     * Clear station infomation.
+     *
+     */
+    clearStation() {
+        this.onlines = {};
+        this.serversMap = {};
+    }
+    /**
+     * Replace remote servers info.
+     *
+     * @param {Array} serverInfos server info list
+     */
+    replaceServers(serverInfos) {
+        this.clearStation();
+        if (!serverInfos || !serverInfos.length) {
+            return;
+        }
+        for (var i = 0, l = serverInfos.length; i < l; i++) {
+            var id = serverInfos[i].id;
+            var type = serverInfos[i].serverType;
+            this.onlines[id] = 1;
+            if (!this.serversMap[type]) {
+                this.serversMap[type] = [];
+            }
+            this.servers[id] = serverInfos[i];
+            if (this.serversMap[type].indexOf(id) < 0) {
+                this.serversMap[type].push(id);
+            }
+        }
+    }
+    ;
+    /**
+     * Dispatch rpc message to the mailbox
+     *
+     * @param  {Object}   tracer   rpc debug tracer
+     * @param  {String}   serverId remote server id
+     * @param  {Object}   msg      rpc invoke message
+     * @param  {Object}   opts     rpc invoke option args
+     * @param  {Function} cb       callback function
+     * @return {Void}
+     */
+    dispatch(tracer, serverId, msg, opts, cb) {
+        tracer && tracer.info('client', __filename, 'dispatch', 'dispatch rpc message to the mailbox');
+        tracer && (tracer.cb = cb);
+        if (this.state !== STATE_STARTED) {
+            tracer && tracer.error('client', __filename, 'dispatch', 'client is not running now');
+            logger.error('[pomelo-rpc] client is not running now.');
+            this.emit('error', constants_1.constants.RPC_ERROR.SERVER_NOT_STARTED, tracer, serverId, msg, opts);
+            return;
+        }
+        var self = this;
+        var mailbox = this.mailboxes[serverId];
+        if (!mailbox) {
+            tracer && tracer.debug('client', __filename, 'dispatch', 'mailbox is not exist');
+            // try to connect remote server if mailbox instance not exist yet
+            if (!lazyConnect(tracer, this, serverId, this.mailboxFactory, cb)) {
+                tracer && tracer.error('client', __filename, 'dispatch', 'fail to find remote server:' + serverId);
+                logger.error('[pomelo-rpc] fail to find remote server:' + serverId);
+                self.emit('error', constants_1.constants.RPC_ERROR.NO_TRAGET_SERVER, tracer, serverId, msg, opts);
+            }
+            // push request to the pending queue
+            addToPending(tracer, this, serverId, arguments);
+            return;
+        }
+        if (this.connecting[serverId]) {
+            tracer && tracer.debug('client', __filename, 'dispatch', 'request add to connecting');
+            // if the mailbox is connecting to remote server
+            addToPending(tracer, this, serverId, arguments);
+            return;
+        }
+        var send = function (tracer, err, serverId, msg, opts) {
+            tracer && tracer.info('client', __filename, 'send', 'get corresponding mailbox and try to send message');
+            var mailbox = self.mailboxes[serverId];
+            if (err) {
+                return errorHandler(tracer, self, err, serverId, msg, opts, true, cb);
+            }
+            if (!mailbox) {
+                tracer && tracer.error('client', __filename, 'send', 'can not find mailbox with id:' + serverId);
+                logger.error('[pomelo-rpc] could not find mailbox with id:' + serverId);
+                self.emit('error', constants_1.constants.RPC_ERROR.FAIL_FIND_MAILBOX, tracer, serverId, msg, opts);
                 return;
             }
-            // var args = arguments[2];
-            doFilter(tracer_send, null, serverId, msg, opts, self.afters, 0, 'after', function (tracer, err, serverId, msg, opts) {
-                if (err) {
-                    errorHandler(tracer, self, err, serverId, msg, opts, false, cb);
+            mailbox.send(tracer, msg, opts, function (tracer_send, send_err, args) {
+                // var tracer_send = arguments[0];
+                // var send_err = arguments[1];
+                if (send_err) {
+                    logger.error('[pomelo-rpc] fail to send message %s', send_err.stack || send_err.message);
+                    self.emit('error', constants_1.constants.RPC_ERROR.FAIL_SEND_MESSAGE, tracer, serverId, msg, opts);
+                    cb && cb(send_err);
+                    // utils.applyCallback(cb, send_err);
+                    return;
                 }
-                utils.applyCallback(cb, args);
+                // var args = arguments[2];
+                doFilter(tracer_send, null, serverId, msg, opts, self.afters, 0, 'after', function (tracer, err, serverId, msg, opts) {
+                    if (err) {
+                        errorHandler(tracer, self, err, serverId, msg, opts, false, cb);
+                    }
+                    utils.applyCallback(cb, args);
+                });
             });
-        });
-    };
-    doFilter(tracer, null, serverId, msg, opts, this.befores, 0, 'before', send);
-};
-/**
- * Add a before filter
- *
- * @param  {[type]} filter [description]
- * @return {[type]}        [description]
- */
-pro.before = function (filter) {
-    if (Array.isArray(filter)) {
-        this.befores = this.befores.concat(filter);
-        return;
+        };
+        doFilter(tracer, null, serverId, msg, opts, this.befores, 0, 'before', send);
     }
-    this.befores.push(filter);
-};
-/**
- * Add after filter
- *
- * @param  {[type]} filter [description]
- * @return {[type]}        [description]
- */
-pro.after = function (filter) {
-    if (Array.isArray(filter)) {
-        this.afters = this.afters.concat(filter);
-        return;
-    }
-    this.afters.push(filter);
-};
-/**
- * Add before and after filter
- *
- * @param  {[type]} filter [description]
- * @return {[type]}        [description]
- */
-pro.filter = function (filter) {
-    this.befores.push(filter);
-    this.afters.push(filter);
-};
-/**
- * Try to connect to remote server
- *
- * @param  {Object}   tracer   rpc debug tracer
- * @return {String}   serverId remote server id
- * @param  {Function}   cb     callback function
- */
-pro.connect = function (tracer, serverId, cb) {
-    var self = this;
-    var mailbox = self.mailboxes[serverId];
-    mailbox.connect(tracer, function (err) {
-        if (!!err) {
-            tracer && tracer.error('client', __filename, 'lazyConnect', 'fail to connect to remote server: ' + serverId);
-            logger.error('[pomelo-rpc] mailbox fail to connect to remote server: ' + serverId);
-            if (!!self.mailboxes[serverId]) {
-                delete self.mailboxes[serverId];
-            }
-            self.emit('error', constants_1.constants.RPC_ERROR.FAIL_CONNECT_SERVER, tracer, serverId, null, self.opts);
+    ;
+    /**
+     * Add a before filter
+     *
+     * @param  {[type]} filter [description]
+     * @return {[type]}        [description]
+     */
+    before(filter) {
+        if (Array.isArray(filter)) {
+            this.befores = this.befores.concat(filter);
             return;
         }
-        mailbox.on('close', function (id) {
-            var mbox = self.mailboxes[id];
-            if (!!mbox) {
-                mbox.close();
-                delete self.mailboxes[id];
+        this.befores.push(filter);
+    }
+    ;
+    /**
+     * Add after filter
+     *
+     * @param  {[type]} filter [description]
+     * @return {[type]}        [description]
+     */
+    after(filter) {
+        if (Array.isArray(filter)) {
+            this.afters = this.afters.concat(filter);
+            return;
+        }
+        this.afters.push(filter);
+    }
+    ;
+    /**
+     * Add before and after filter
+     *
+     * @param  {[type]} filter [description]
+     * @return {[type]}        [description]
+     */
+    filter(filter) {
+        this.befores.push(filter);
+        this.afters.push(filter);
+    }
+    ;
+    /**
+     * Try to connect to remote server
+     *
+     * @param  {Object}   tracer   rpc debug tracer
+     * @return {String}   serverId remote server id
+     * @param  {Function}   cb     callback function
+     */
+    connect(tracer, serverId, cb) {
+        var self = this;
+        var mailbox = self.mailboxes[serverId];
+        mailbox.connect(tracer, function (err) {
+            if (!!err) {
+                tracer && tracer.error('client', __filename, 'lazyConnect', 'fail to connect to remote server: ' + serverId);
+                logger.error('[pomelo-rpc] mailbox fail to connect to remote server: ' + serverId);
+                if (!!self.mailboxes[serverId]) {
+                    delete self.mailboxes[serverId];
+                }
+                self.emit('error', constants_1.constants.RPC_ERROR.FAIL_CONNECT_SERVER, tracer, serverId, null, self.opts);
+                return;
             }
-            self.emit('close', id);
+            mailbox.on('close', function (id) {
+                var mbox = self.mailboxes[id];
+                if (!!mbox) {
+                    mbox.close();
+                    delete self.mailboxes[id];
+                }
+                self.emit('close', id);
+            });
+            delete self.connecting[serverId];
+            flushPending(tracer, self, serverId);
         });
-        delete self.connecting[serverId];
-        flushPending(tracer, self, serverId);
-    });
-};
+    }
+    ;
+}
+exports.MailStation = MailStation;
 /**
  * Do before or after filter
  */

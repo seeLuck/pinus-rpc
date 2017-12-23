@@ -56,7 +56,7 @@ export class Client
      *
      * @param cb {Function} cb(err)
      */
-    start = function (cb)
+    start(cb)
     {
         if (this.state > STATE_INITED)
         {
@@ -84,7 +84,7 @@ export class Client
      * @param  {Boolean} force
      * @return {Void}
      */
-    stop = function (force)
+    stop(force)
     {
         if (this.state !== STATE_STARTED)
         {
@@ -102,7 +102,7 @@ export class Client
      * @param {Object} record proxy description record, format:
      *                        {namespace, serverType, path}
      */
-    addProxy = function (record)
+    addProxy(record)
     {
         if (!record)
         {
@@ -121,7 +121,7 @@ export class Client
      *
      * @param {Array} records list of proxy description record
      */
-    addProxies = function (records)
+    addProxies(records)
     {
         if (!records || !records.length)
         {
@@ -138,7 +138,7 @@ export class Client
      *
      * @param {Object} server new server information
      */
-    addServer = function (server)
+    addServer(server)
     {
         this._station.addServer(server);
     };
@@ -148,7 +148,7 @@ export class Client
      *
      * @param {Array} servers server info list
      */
-    addServers = function (servers)
+    addServers(servers)
     {
         this._station.addServers(servers);
     };
@@ -158,7 +158,7 @@ export class Client
      *
      * @param  {String|Number} id server id
      */
-    removeServer = function (id)
+    removeServer(id)
     {
         this._station.removeServer(id);
     };
@@ -168,7 +168,7 @@ export class Client
      *
      * @param  {Array} ids remote server id list
      */
-    removeServers = function (ids)
+    removeServers(ids)
     {
         this._station.removeServers(ids);
     };
@@ -178,7 +178,7 @@ export class Client
      *
      * @param {Array} servers server info list
      */
-    replaceServers = function (servers)
+    replaceServers(servers)
     {
         this._station.replaceServers(servers);
     };
@@ -191,7 +191,7 @@ export class Client
      *    {serverType: serverType, service: serviceName, method: methodName, args: arguments}
      * @param cb {Function} cb(err, ...)
      */
-    rpcInvoke = function (serverId, msg, cb)
+    rpcInvoke(serverId, msg, cb)
     {
         var rpcDebugLog = this.rpcDebugLog;
         var tracer = null;
@@ -219,7 +219,7 @@ export class Client
      *
      * @api public
      */
-    before = function (filter)
+    before(filter)
     {
         this._station.before(filter);
     };
@@ -231,7 +231,7 @@ export class Client
      *
      * @api public
      */
-    after = function (filter)
+    after(filter)
     {
         this._station.after(filter);
     };
@@ -243,7 +243,7 @@ export class Client
      *
      * @api public
      */
-    filter = function (filter)
+    filter(filter)
     {
         this._station.filter(filter);
     };
@@ -255,7 +255,7 @@ export class Client
      *
      * @api public
      */
-    setErrorHandler = function (handler)
+    setErrorHandler(handler)
     {
         this._station.handleError = handler;
     };

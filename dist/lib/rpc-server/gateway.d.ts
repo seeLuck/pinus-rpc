@@ -9,8 +9,8 @@ export declare class Gateway extends EventEmitter {
     services: any;
     acceptor: any;
     constructor(opts: any);
-    stop: () => void;
-    start: () => void;
+    stop(): void;
+    start(): void;
 }
 /**
  * create and init gateway
