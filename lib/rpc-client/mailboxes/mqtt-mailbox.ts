@@ -3,7 +3,7 @@ var logger = getLogger('pomelo-rpc', 'mqtt-mailbox');
 import { EventEmitter } from 'events';
 import { constants } from '../../util/constants';
 import { Tracer } from '../../util/tracer';
-var MqttCon = require('mqtt-connection');
+import * as MqttCon from 'mqtt-connection';
 import * as utils from '../../util/utils';
 import * as util from 'util';
 import * as net from 'net';
