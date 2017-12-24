@@ -1,3 +1,4 @@
+import { Logger } from 'log4js';
 export declare class Tracer {
     private isEnabled;
     private logger;
@@ -6,20 +7,20 @@ export declare class Tracer {
     private id;
     private seq;
     private msg;
-    constructor(logger: any, enabledRpcLog: any, source: any, remote: any, msg: any, id?: string, seq?: number);
-    getLogger(role: any, module: any, method: any, des: any): {
+    constructor(logger: Logger, enabledRpcLog: boolean, source: string, remote: string, msg: string, id?: string, seq?: number);
+    getLogger(role: string, module: string, method: string, des: string): {
         traceId: string;
         seq: number;
-        role: any;
+        role: string;
         source: string;
         remote: string;
         module: string;
-        method: any;
+        method: string;
         args: string;
         timestamp: number;
-        description: any;
+        description: string;
     };
-    info(role: any, module: any, method: any, des: any): void;
-    debug(role: any, module: any, method: any, des: any): void;
-    error(role: any, module: any, method: any, des: any): void;
+    info(role: string, module: string, method: string, des: string): void;
+    debug(role: string, module: string, method: string, des: string): void;
+    error(role: string, module: string, method: string, des: string): void;
 }

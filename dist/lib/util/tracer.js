@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const uuid = require("node-uuid");
+const uuid = require("uuid");
 var getModule = function (module) {
     var rs = '';
     var strs = module.split('/');

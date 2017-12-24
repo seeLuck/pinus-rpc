@@ -17,12 +17,12 @@ export class MQTTAcceptor extends EventEmitter
     _interval: any; // interval object
     sockets: any;
     msgQueues: any
-    cb : (tracer, msg ?: any, cb ?: Function)=>void;
+    cb : (tracer : any, msg ?: any, cb ?: Function)=>void;
     inited: boolean;
     server: net.Server;
     closed: boolean;
 
-    constructor(opts, cb : (tracer, msg ?: any, cb ?: Function)=>void)
+    constructor(opts, cb : (tracer: any, msg ?: any, cb ?: Function)=>void)
     {
         super();
         this.interval = opts.interval; // flush interval in ms

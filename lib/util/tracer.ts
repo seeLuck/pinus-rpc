@@ -1,6 +1,7 @@
-import * as uuid from 'node-uuid';
+import * as uuid from 'uuid';
+import { Logger } from 'log4js';
 
-var getModule = function (module)
+var getModule = function (module : string)
 {
     var rs = '';
     var strs = module.split('/');
@@ -21,7 +22,7 @@ export class Tracer
     private seq: number;
     private msg: string;
 
-    constructor(logger, enabledRpcLog, source, remote, msg, id ?: string, seq ?: number)
+    constructor(logger : Logger, enabledRpcLog : boolean, source : string, remote : string, msg : string, id ?: string, seq ?: number)
     {
         this.isEnabled = enabledRpcLog;
         if (!enabledRpcLog)
@@ -36,7 +37,7 @@ export class Tracer
         this.msg = msg;
     };
 
-    getLogger(role, module, method, des)
+    getLogger(role : string, module : string, method : string, des : string)
     {
         return {
             traceId: this.id,
@@ -52,7 +53,7 @@ export class Tracer
         };
     };
 
-    info(role, module, method, des)
+    info(role : string, module : string, method : string, des : string)
     {
         if (this.isEnabled)
         {
@@ -61,7 +62,7 @@ export class Tracer
         return;
     };
 
-    debug(role, module, method, des)
+    debug(role : string, module : string, method : string, des : string)
     {
         if (this.isEnabled)
         {
@@ -70,7 +71,7 @@ export class Tracer
         return;
     };
 
-    error(role, module, method, des)
+    error(role : string, module : string, method : string, des : string)
     {
         if (this.isEnabled)
         {

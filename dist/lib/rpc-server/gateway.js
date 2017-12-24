@@ -18,7 +18,7 @@ class Gateway extends events_1.EventEmitter {
         this.services = opts.services;
         var dispatcher = new dispatcher_1.Dispatcher(this.services);
         if (!!this.opts.reloadRemotes) {
-            watchServices(this, dispatcher);
+            this.watchServices(dispatcher);
         }
         this.acceptor = acceptorFactory.create(opts, function (tracer, msg, cb) {
             dispatcher.route(tracer, msg, cb);
@@ -47,6 +47,29 @@ class Gateway extends events_1.EventEmitter {
         this.acceptor.listen(this.port);
     }
     ;
+    watchServices(dispatcher) {
+        var paths = this.opts.paths;
+        var app = this.opts.context;
+        for (var i = 0; i < paths.length; i++) {
+            (function (index) {
+                fs.watch(paths[index].path, function (event, name) {
+                    if (event === 'change') {
+                        var res = {};
+                        var item = paths[index];
+                        var m = Loader.load(item.path, app);
+                        if (m) {
+                            createNamespace(item.namespace, res);
+                            for (var s in m) {
+                                res[item.namespace][s] = m[s];
+                            }
+                        }
+                        dispatcher.emit('reload', res);
+                    }
+                });
+            })(i);
+        }
+    }
+    ;
 }
 exports.Gateway = Gateway;
 /**
@@ -62,28 +85,6 @@ function create(opts) {
 }
 exports.create = create;
 ;
-var watchServices = function (gateway, dispatcher) {
-    var paths = gateway.opts.paths;
-    var app = gateway.opts.context;
-    for (var i = 0; i < paths.length; i++) {
-        (function (index) {
-            fs.watch(paths[index].path, function (event, name) {
-                if (event === 'change') {
-                    var res = {};
-                    var item = paths[index];
-                    var m = Loader.load(item.path, app);
-                    if (m) {
-                        createNamespace(item.namespace, res);
-                        for (var s in m) {
-                            res[item.namespace][s] = m[s];
-                        }
-                    }
-                    dispatcher.emit('reload', res);
-                }
-            });
-        })(i);
-    }
-};
 var createNamespace = function (namespace, proxies) {
     proxies[namespace] = proxies[namespace] || {};
 };

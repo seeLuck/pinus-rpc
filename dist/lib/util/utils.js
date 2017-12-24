@@ -197,33 +197,4 @@ for (var i = 1; i <= exports.typeArray.length; i++) {
 exports.getBearcat = function () {
     return require('bearcat');
 };
-exports.genServicesMap = function (services) {
-    var nMap = {}; // namespace
-    var sMap = {}; // service
-    var mMap = {}; // method
-    var nList = [];
-    var sList = [];
-    var mList = [];
-    var nIndex = 0;
-    var sIndex = 0;
-    var mIndex = 0;
-    for (var namespace in services) {
-        nList.push(namespace);
-        nMap[namespace] = nIndex++;
-        var s = services[namespace];
-        for (var service in s) {
-            sList.push(service);
-            sMap[service] = sIndex++;
-            var m = s[service];
-            for (var method in m) {
-                var func = m[method];
-                if (exports.checkFunction(func)) {
-                    mList.push(method);
-                    mMap[method] = mIndex++;
-                }
-            }
-        }
-    }
-    return [nMap, sMap, mMap, nList, sList, mList];
-};
 //# sourceMappingURL=utils.js.map

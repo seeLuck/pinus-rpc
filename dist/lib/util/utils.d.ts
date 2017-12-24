@@ -1,6 +1,6 @@
-export declare function invokeCallback(cb: any): void;
-export declare function applyCallback(cb: any, args: any): void;
-export declare function getObjectClass(obj: any): any;
+export declare function invokeCallback(cb: Function): void;
+export declare function applyCallback(cb: Function, args: any[]): void;
+export declare function getObjectClass(obj: Object): any;
 /**
  * Utils check float
  *
@@ -81,7 +81,7 @@ export declare var checkNull: (obj: any) => boolean;
  * @return {Array}   array
  * @api public
  */
-export declare var to_array: (args: any) => any[];
+export declare var to_array: (args: any[]) => any[];
 /**
  * Utils check is not null
  *
@@ -92,6 +92,5 @@ export declare var to_array: (args: any) => any[];
 export declare var isNotNull: (value: any) => boolean;
 export declare var getType: (object: any) => any;
 export declare var typeArray: string[];
-export declare var typeMap: {};
+export declare var typeMap: any;
 export declare var getBearcat: () => any;
-export declare var genServicesMap: (services: any) => {}[];

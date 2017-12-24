@@ -8,4 +8,9 @@
  *           opts.attach {Object} attach parameter pass to proxyCB
  * @return {Object}      proxy instance
  */
-export declare function create(opts: any): any;
+export declare function create(opts: {
+    origin: any;
+    proxyCB: Function;
+    service: string;
+    attach: Object;
+}): any;

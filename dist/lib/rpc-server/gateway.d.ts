@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
+import { Dispatcher } from './dispatcher';
 export declare class Gateway extends EventEmitter {
     opts: any;
     port: number;
@@ -10,6 +11,7 @@ export declare class Gateway extends EventEmitter {
     constructor(opts: any);
     stop(force: boolean): void;
     start(): void;
+    watchServices(dispatcher: Dispatcher): void;
 }
 /**
  * create and init gateway

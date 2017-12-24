@@ -1,5 +1,5 @@
 
-export function invokeCallback(cb)
+export function invokeCallback(cb : Function)
 {
     if (typeof cb === 'function')
     {
@@ -7,7 +7,7 @@ export function invokeCallback(cb)
     }
 };
 
-export function applyCallback(cb, args)
+export function applyCallback(cb : Function, args : any[])
 {
     if (typeof cb === 'function')
     {
@@ -15,7 +15,7 @@ export function applyCallback(cb, args)
     }
 };
 
-export function getObjectClass(obj)
+export function getObjectClass(obj : Object)
 {
     if (!obj)
     {
@@ -61,7 +61,7 @@ export function getObjectClass(obj)
  * @return {Boolean} true|false
  * @api public
  */
-export function checkFloat(v)
+export function checkFloat(v : any)
 {
     return v === Number(v) && v % 1 !== 0;
     // return parseInt(v) !== v;
@@ -74,9 +74,9 @@ export function checkFloat(v)
  * @return {Function} high order function
  * @api public
  */
-export function isType(type)
+export function isType(type : any)
 {
-    return function (obj)
+    return function (obj : any)
     {
         return {}.toString.call(obj) == "[object " + type + "]";
     }
@@ -142,14 +142,14 @@ export var checkBoolean = isType("Boolean");
  * @return {Boolean}  true|false
  * @api public
  */
-export var checkBean = function (obj)
+export var checkBean = function (obj : any)
 {
     return obj && obj['$id'] &&
         checkFunction(obj['writeFields']) &&
         checkFunction(obj['readFields']);
 }
 
-export var checkNull = function (obj)
+export var checkNull = function (obj : any)
 {
     return !isNotNull(obj);
 }
@@ -161,7 +161,7 @@ export var checkNull = function (obj)
  * @return {Array}   array
  * @api public
  */
-export var to_array = function (args)
+export var to_array = function (args : any[])
 {
     var len = args.length;
     var arr = new Array(len);
@@ -181,14 +181,14 @@ export var to_array = function (args)
  * @return {Boolean}  true|false
  * @api public
  */
-export var isNotNull = function (value)
+export var isNotNull = function (value : any)
 {
     if (value !== null && typeof value !== 'undefined')
         return true;
     return false;
 }
 
-export var getType = function (object)
+export var getType = function (object : any)
 {
     if (object == null || typeof object === 'undefined')
     {
@@ -242,7 +242,7 @@ export var getType = function (object)
 }
 
 export var typeArray = ['', 'null', 'buffer', 'array', 'string', 'object', 'bean', 'boolean', 'float', 'number'];
-export var typeMap = {};
+export var typeMap : any = {};
 for (var i = 1; i <= typeArray.length; i++)
 {
     typeMap[typeArray[i]] = i;
@@ -251,44 +251,4 @@ for (var i = 1; i <= typeArray.length; i++)
 export var getBearcat = function ()
 {
     return require('bearcat');
-}
-
-export var genServicesMap = function (services)
-{
-    var nMap = {}; // namespace
-    var sMap = {}; // service
-    var mMap = {}; // method
-    var nList = [];
-    var sList = [];
-    var mList = [];
-
-    var nIndex = 0;
-    var sIndex = 0;
-    var mIndex = 0;
-
-    for (var namespace in services)
-    {
-        nList.push(namespace);
-        nMap[namespace] = nIndex++;
-        var s = services[namespace];
-
-        for (var service in s)
-        {
-            sList.push(service);
-            sMap[service] = sIndex++;
-            var m = s[service];
-
-            for (var method in m)
-            {
-                var func = m[method];
-                if (checkFunction(func))
-                {
-                    mList.push(method);
-                    mMap[method] = mIndex++;
-                }
-            }
-        }
-    }
-
-    return [nMap, sMap, mMap, nList, sList, mList];
 }

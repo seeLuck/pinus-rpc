@@ -11,7 +11,7 @@ var logger = getLogger('pomelo-rpc', 'rpc-proxy');
  *           opts.attach {Object} attach parameter pass to proxyCB
  * @return {Object}      proxy instance
  */
-export function create(opts)
+export function create(opts : {origin : any , proxyCB : Function , service : string , attach : Object})
 {
     if (!opts || !opts.origin)
     {
@@ -28,10 +28,10 @@ export function create(opts)
     return genObjectProxy(opts.service, opts.origin, opts.attach, opts.proxyCB);
 };
 
-var genObjectProxy = function (serviceName, origin, attach, proxyCB)
+var genObjectProxy = function (serviceName : string, origin : any, attach : Object, proxyCB : Function)
 {
     //generate proxy for function field
-    var res = {};
+    var res : {[key:string] : Function} = {};
     for (var field in origin)
     {
         if (typeof origin[field] === 'function')
@@ -54,7 +54,7 @@ var genObjectProxy = function (serviceName, origin, attach, proxyCB)
  * @param proxyCB {Functoin} proxy callback function
  * @returns function proxy
  */
-var genFunctionProxy = function (serviceName, methodName, origin, attach, proxyCB)
+var genFunctionProxy = function (serviceName : string, methodName : string, origin : string, attach : Object, proxyCB : Function)
 {
     return (function ()
     {

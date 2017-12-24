@@ -26,7 +26,7 @@ export class Gateway extends EventEmitter
         var dispatcher = new Dispatcher(this.services);
         if (!!this.opts.reloadRemotes)
         {
-            watchServices(this, dispatcher);
+            this.watchServices(dispatcher);
         }
         this.acceptor = acceptorFactory.create(opts, function (tracer, msg, cb)
         {
@@ -61,6 +61,37 @@ export class Gateway extends EventEmitter
         this.acceptor.on('closed', self.emit.bind(self, 'closed'));
         this.acceptor.listen(this.port);
     };
+
+    
+    watchServices(dispatcher : Dispatcher)
+    {
+        var paths = this.opts.paths;
+        var app = this.opts.context;
+        for (var i = 0; i < paths.length; i++)
+        {
+            (function (index)
+            {
+                fs.watch(paths[index].path, function (event, name)
+                {
+                    if (event === 'change')
+                    {
+                        var res = {};
+                        var item = paths[index];
+                        var m = Loader.load(item.path, app);
+                        if (m)
+                        {
+                            createNamespace(item.namespace, res);
+                            for (var s in m)
+                            {
+                                res[item.namespace][s] = m[s];
+                            }
+                        }
+                        dispatcher.emit('reload', res);
+                    }
+                });
+            })(i);
+        }
+    };
 }
 /**
  * create and init gateway
@@ -77,35 +108,6 @@ export function create(opts)
     return new Gateway(opts);
 };
 
-var watchServices = function (gateway, dispatcher)
-{
-    var paths = gateway.opts.paths;
-    var app = gateway.opts.context;
-    for (var i = 0; i < paths.length; i++)
-    {
-        (function (index)
-        {
-            fs.watch(paths[index].path, function (event, name)
-            {
-                if (event === 'change')
-                {
-                    var res = {};
-                    var item = paths[index];
-                    var m = Loader.load(item.path, app);
-                    if (m)
-                    {
-                        createNamespace(item.namespace, res);
-                        for (var s in m)
-                        {
-                            res[item.namespace][s] = m[s];
-                        }
-                    }
-                    dispatcher.emit('reload', res);
-                }
-            });
-        })(i);
-    }
-};
 
 var createNamespace = function (namespace, proxies)
 {

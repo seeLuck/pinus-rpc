@@ -9,11 +9,11 @@ export declare class MQTTAcceptor extends EventEmitter {
     _interval: any;
     sockets: any;
     msgQueues: any;
-    cb: (tracer, msg?: any, cb?: Function) => void;
+    cb: (tracer: any, msg?: any, cb?: Function) => void;
     inited: boolean;
     server: net.Server;
     closed: boolean;
-    constructor(opts: any, cb: (tracer, msg?: any, cb?: Function) => void);
+    constructor(opts: any, cb: (tracer: any, msg?: any, cb?: Function) => void);
     listen(port: any): void;
     close(): void;
     onSocketClose(socket: any): void;
