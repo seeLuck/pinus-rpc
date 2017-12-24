@@ -12,7 +12,6 @@ export class Gateway extends EventEmitter
     port: number;
     started = false;
     stoped = false;
-    acceptorFactory: any;
     services: any;
     acceptor: any;
     constructor(opts)
@@ -22,14 +21,14 @@ export class Gateway extends EventEmitter
         this.port = opts.port || 3050;
         this.started = false;
         this.stoped = false;
-        this.acceptorFactory = opts.acceptorFactory || defaultAcceptorFactory;
+        var acceptorFactory = opts.acceptorFactory || defaultAcceptorFactory;
         this.services = opts.services;
         var dispatcher = new Dispatcher(this.services);
         if (!!this.opts.reloadRemotes)
         {
             watchServices(this, dispatcher);
         }
-        this.acceptor = this.acceptorFactory.create(opts, function (tracer, msg, cb)
+        this.acceptor = acceptorFactory.create(opts, function (tracer, msg, cb)
         {
             dispatcher.route(tracer, msg, cb);
         });

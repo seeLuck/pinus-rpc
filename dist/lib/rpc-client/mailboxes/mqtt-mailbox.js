@@ -41,35 +41,35 @@ class MailBox extends events_1.EventEmitter {
         var self = this;
         var stream = net.createConnection(this.port, this.host);
         this.socket = MqttCon(stream);
-        var connectTimeout = setTimeout(function () {
+        var connectTimeout = setTimeout(() => {
             logger.error('rpc client %s connect to remote server %s timeout', self.serverId, self.id);
             self.emit('close', self.id);
         }, CONNECT_TIMEOUT);
         this.socket.connect({
             clientId: 'MQTT_RPC_' + Date.now()
-        }, function () {
+        }, () => {
             if (self.connected) {
                 return;
             }
             clearTimeout(connectTimeout);
             self.connected = true;
             if (self.bufferMsg) {
-                self._interval = setInterval(function () {
-                    flush(self);
+                self._interval = setInterval(() => {
+                    self.flush();
                 }, self.interval);
             }
             self.setupKeepAlive();
             cb();
         });
-        this.socket.on('publish', function (pkg) {
+        this.socket.on('publish', (pkg) => {
             pkg = pkg.payload.toString();
             try {
                 pkg = JSON.parse(pkg);
                 if (pkg instanceof Array) {
-                    processMsgs(self, pkg);
+                    this.processMsgs(pkg);
                 }
                 else {
-                    processMsg(self, pkg);
+                    this.processMsg(pkg);
                 }
             }
             catch (err) {
@@ -131,7 +131,7 @@ class MailBox extends events_1.EventEmitter {
         }
         var id = this.curId++;
         this.requests[id] = cb;
-        setCbTimeout(this, id, tracer, cb);
+        this.setCbTimeout(id, tracer, cb);
         var pkg;
         if (tracer && tracer.isEnabled) {
             pkg = {
@@ -150,10 +150,10 @@ class MailBox extends events_1.EventEmitter {
             };
         }
         if (this.bufferMsg) {
-            enqueue(this, pkg);
+            this.enqueue(pkg);
         }
         else {
-            doSend(this.socket, pkg);
+            this.doSend(this.socket, pkg);
         }
     }
     ;
@@ -189,67 +189,73 @@ class MailBox extends events_1.EventEmitter {
             this.lastPing = Date.now();
         }
     }
+    enqueue(msg) {
+        this.queue.push(msg);
+    }
+    ;
+    flush() {
+        if (this.closed || !this.queue.length) {
+            return;
+        }
+        this.doSend(this.socket, this.queue);
+        this.queue = [];
+    }
+    ;
+    doSend(socket, msg) {
+        socket.publish({
+            topic: 'rpc',
+            payload: JSON.stringify(msg)
+        });
+    }
+    processMsgs(pkgs) {
+        for (var i = 0, l = pkgs.length; i < l; i++) {
+            this.processMsg(pkgs[i]);
+        }
+    }
+    ;
+    processMsg(pkg) {
+        var pkgId = pkg.id;
+        this.clearCbTimeout(pkgId);
+        var cb = this.requests[pkgId];
+        if (!cb) {
+            return;
+        }
+        delete this.requests[pkgId];
+        var rpcDebugLog = this.opts.rpcDebugLog;
+        var tracer = null;
+        var sendErr = null;
+        if (rpcDebugLog) {
+            tracer = new tracer_1.Tracer(this.opts.rpcLogger, this.opts.rpcDebugLog, this.opts.clientId, pkg.source, pkg.resp, pkg.traceId, pkg.seqId);
+        }
+        var pkgResp = pkg.resp;
+        cb(tracer, sendErr, pkgResp);
+    }
+    ;
+    setCbTimeout(id, tracer, cb) {
+        var timer = setTimeout(() => {
+            // logger.warn('rpc request is timeout, id: %s, host: %s, port: %s', id, this.host, this.port);
+            this.clearCbTimeout(id);
+            if (this.requests[id]) {
+                delete this.requests[id];
+            }
+            var eMsg = util.format('rpc %s callback timeout %d, remote server %s host: %s, port: %s', this.serverId, this.timeoutValue, id, this.host, this.port);
+            logger.error(eMsg);
+            cb(tracer, new Error(eMsg));
+        }, this.timeoutValue);
+        this.timeout[id] = timer;
+    }
+    ;
+    clearCbTimeout(id) {
+        if (!this.timeout[id]) {
+            logger.warn('timer is not exsits, serverId: %s remote: %s, host: %s, port: %s', this.serverId, id, this.host, this.port);
+            return;
+        }
+        clearTimeout(this.timeout[id]);
+        delete this.timeout[id];
+    }
+    ;
 }
 exports.MailBox = MailBox;
-var enqueue = function (mailbox, msg) {
-    mailbox.queue.push(msg);
-};
-var flush = function (mailbox) {
-    if (mailbox.closed || !mailbox.queue.length) {
-        return;
-    }
-    doSend(mailbox.socket, mailbox.queue);
-    mailbox.queue = [];
-};
-var doSend = function (socket, msg) {
-    socket.publish({
-        topic: 'rpc',
-        payload: JSON.stringify(msg)
-    });
-};
-var processMsgs = function (mailbox, pkgs) {
-    for (var i = 0, l = pkgs.length; i < l; i++) {
-        processMsg(mailbox, pkgs[i]);
-    }
-};
-var processMsg = function (mailbox, pkg) {
-    var pkgId = pkg.id;
-    clearCbTimeout(mailbox, pkgId);
-    var cb = mailbox.requests[pkgId];
-    if (!cb) {
-        return;
-    }
-    delete mailbox.requests[pkgId];
-    var rpcDebugLog = mailbox.opts.rpcDebugLog;
-    var tracer = null;
-    var sendErr = null;
-    if (rpcDebugLog) {
-        tracer = new tracer_1.Tracer(mailbox.opts.rpcLogger, mailbox.opts.rpcDebugLog, mailbox.opts.clientId, pkg.source, pkg.resp, pkg.traceId, pkg.seqId);
-    }
-    var pkgResp = pkg.resp;
-    cb(tracer, sendErr, pkgResp);
-};
-var setCbTimeout = function (mailbox, id, tracer, cb) {
-    var timer = setTimeout(function () {
-        // logger.warn('rpc request is timeout, id: %s, host: %s, port: %s', id, mailbox.host, mailbox.port);
-        clearCbTimeout(mailbox, id);
-        if (mailbox.requests[id]) {
-            delete mailbox.requests[id];
-        }
-        var eMsg = util.format('rpc %s callback timeout %d, remote server %s host: %s, port: %s', mailbox.serverId, mailbox.timeoutValue, id, mailbox.host, mailbox.port);
-        logger.error(eMsg);
-        cb(tracer, new Error(eMsg));
-    }, mailbox.timeoutValue);
-    mailbox.timeout[id] = timer;
-};
-var clearCbTimeout = function (mailbox, id) {
-    if (!mailbox.timeout[id]) {
-        logger.warn('timer is not exsits, serverId: %s remote: %s, host: %s, port: %s', mailbox.serverId, id, mailbox.host, mailbox.port);
-        return;
-    }
-    clearTimeout(mailbox.timeout[id]);
-    delete mailbox.timeout[id];
-};
 /**
 * Factory method to create mailbox
 *

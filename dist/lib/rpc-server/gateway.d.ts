@@ -5,7 +5,6 @@ export declare class Gateway extends EventEmitter {
     port: number;
     started: boolean;
     stoped: boolean;
-    acceptorFactory: any;
     services: any;
     acceptor: any;
     constructor(opts: any);

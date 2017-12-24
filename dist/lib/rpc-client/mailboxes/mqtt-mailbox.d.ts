@@ -37,6 +37,13 @@ export declare class MailBox extends EventEmitter {
     send(tracer: any, msg: any, opts: any, cb: any): void;
     setupKeepAlive(): void;
     checkKeepAlive(): void;
+    enqueue(msg: any): void;
+    flush(): void;
+    doSend(socket: any, msg: any): void;
+    processMsgs(pkgs: any): void;
+    processMsg(pkg: any): void;
+    setCbTimeout(id: any, tracer: any, cb: any): void;
+    clearCbTimeout(id: any): void;
 }
 /**
 * Factory method to create mailbox

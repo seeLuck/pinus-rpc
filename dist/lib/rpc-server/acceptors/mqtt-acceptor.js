@@ -7,7 +7,7 @@ const tracer_1 = require("../../util/tracer");
 const MqttCon = require("mqtt-connection");
 const net = require("net");
 var curId = 1;
-class Acceptor extends events_1.EventEmitter {
+class MQTTAcceptor extends events_1.EventEmitter {
     constructor(opts, cb) {
         super();
         this.interval = opts.interval; // flush interval in ms
@@ -46,18 +46,18 @@ class Acceptor extends events_1.EventEmitter {
                 try {
                     pkg = JSON.parse(pkg);
                     if (pkg instanceof Array) {
-                        processMsgs(socket, self, pkg);
+                        self.processMsgs(socket, pkg);
                         isArray = true;
                     }
                     else {
-                        processMsg(socket, self, pkg);
+                        self.processMsg(socket, pkg);
                     }
                 }
                 catch (err) {
                     if (!isArray) {
-                        doSend(socket, {
+                        self.doSend(socket, {
                             id: pkg.id,
-                            resp: [cloneError(err)]
+                            resp: [self.cloneError(err)]
                         });
                     }
                     logger.error('process rpc message error %s', err.stack);
@@ -79,7 +79,7 @@ class Acceptor extends events_1.EventEmitter {
         });
         if (this.bufferMsg) {
             this._interval = setInterval(function () {
-                flush(self);
+                self.flush();
             }, this.interval);
         }
     }
@@ -105,93 +105,92 @@ class Acceptor extends events_1.EventEmitter {
             delete this.msgQueues[id];
         }
     }
+    cloneError(origin) {
+        // copy the stack infos for Error instance json result is empty
+        var res = {
+            msg: origin.msg,
+            stack: origin.stack
+        };
+        return res;
+    }
+    ;
+    processMsg(socket, pkg) {
+        var tracer = null;
+        if (this.rpcDebugLog) {
+            tracer = new tracer_1.Tracer(this.rpcLogger, this.rpcDebugLog, pkg.remote, pkg.source, pkg.msg, pkg.traceId, pkg.seqId);
+            tracer.info('server', __filename, 'processMsg', 'mqtt-acceptor receive message and try to process message');
+        }
+        this.cb(tracer, pkg.msg, (...args) => {
+            var errorArg = args[0]; // first callback argument can be error object, the others are message
+            if (errorArg && errorArg instanceof Error) {
+                args[0] = this.cloneError(errorArg);
+            }
+            var resp;
+            if (tracer && tracer.isEnabled) {
+                resp = {
+                    traceId: tracer.id,
+                    seqId: tracer.seq,
+                    source: tracer.source,
+                    id: pkg.id,
+                    resp: args
+                };
+            }
+            else {
+                resp = {
+                    id: pkg.id,
+                    resp: args
+                };
+            }
+            if (this.bufferMsg) {
+                this.enqueue(socket, resp);
+            }
+            else {
+                this.doSend(socket, resp);
+            }
+        });
+    }
+    ;
+    processMsgs(socket, pkgs) {
+        for (var i = 0, l = pkgs.length; i < l; i++) {
+            this.processMsg(socket, pkgs[i]);
+        }
+    }
+    ;
+    enqueue(socket, msg) {
+        var id = socket.id;
+        var queue = this.msgQueues[id];
+        if (!queue) {
+            queue = this.msgQueues[id] = [];
+        }
+        queue.push(msg);
+    }
+    ;
+    flush() {
+        var sockets = this.sockets, queues = this.msgQueues, queue, socket;
+        for (var socketId in queues) {
+            socket = sockets[socketId];
+            if (!socket) {
+                // clear pending messages if the socket not exist any more
+                delete queues[socketId];
+                continue;
+            }
+            queue = queues[socketId];
+            if (!queue.length) {
+                continue;
+            }
+            this.doSend(socket, queue);
+            queues[socketId] = [];
+        }
+    }
+    ;
+    doSend(socket, msg) {
+        socket.publish({
+            topic: 'rpc',
+            payload: JSON.stringify(msg)
+        });
+    }
 }
-exports.Acceptor = Acceptor;
-var cloneError = function (origin) {
-    // copy the stack infos for Error instance json result is empty
-    var res = {
-        msg: origin.msg,
-        stack: origin.stack
-    };
-    return res;
-};
-var processMsg = function (socket, acceptor, pkg) {
-    var tracer = null;
-    if (this.rpcDebugLog) {
-        tracer = new tracer_1.Tracer(acceptor.rpcLogger, acceptor.rpcDebugLog, pkg.remote, pkg.source, pkg.msg, pkg.traceId, pkg.seqId);
-        tracer.info('server', __filename, 'processMsg', 'mqtt-acceptor receive message and try to process message');
-    }
-    acceptor.cb(tracer, pkg.msg, function () {
-        // var args = Array.prototype.slice.call(arguments, 0);
-        var len = arguments.length;
-        var args = new Array(len);
-        for (var i = 0; i < len; i++) {
-            args[i] = arguments[i];
-        }
-        var errorArg = args[0]; // first callback argument can be error object, the others are message
-        if (errorArg && errorArg instanceof Error) {
-            args[0] = cloneError(errorArg);
-        }
-        var resp;
-        if (tracer && tracer.isEnabled) {
-            resp = {
-                traceId: tracer.id,
-                seqId: tracer.seq,
-                source: tracer.source,
-                id: pkg.id,
-                resp: args
-            };
-        }
-        else {
-            resp = {
-                id: pkg.id,
-                resp: args
-            };
-        }
-        if (acceptor.bufferMsg) {
-            enqueue(socket, acceptor, resp);
-        }
-        else {
-            doSend(socket, resp);
-        }
-    });
-};
-var processMsgs = function (socket, acceptor, pkgs) {
-    for (var i = 0, l = pkgs.length; i < l; i++) {
-        processMsg(socket, acceptor, pkgs[i]);
-    }
-};
-var enqueue = function (socket, acceptor, msg) {
-    var id = socket.id;
-    var queue = acceptor.msgQueues[id];
-    if (!queue) {
-        queue = acceptor.msgQueues[id] = [];
-    }
-    queue.push(msg);
-};
-var flush = function (acceptor) {
-    var sockets = acceptor.sockets, queues = acceptor.msgQueues, queue, socket;
-    for (var socketId in queues) {
-        socket = sockets[socketId];
-        if (!socket) {
-            // clear pending messages if the socket not exist any more
-            delete queues[socketId];
-            continue;
-        }
-        queue = queues[socketId];
-        if (!queue.length) {
-            continue;
-        }
-        doSend(socket, queue);
-        queues[socketId] = [];
-    }
-};
-var doSend = function (socket, msg) {
-    socket.publish({
-        topic: 'rpc',
-        payload: JSON.stringify(msg)
-    });
-};
+exports.MQTTAcceptor = MQTTAcceptor;
 /**
  * create acceptor
  *
@@ -199,7 +198,7 @@ var doSend = function (socket, msg) {
  * @param cb(tracer, msg, cb) callback function that would be invoked when new message arrives
  */
 function create(opts, cb) {
-    return new Acceptor(opts || {}, cb);
+    return new MQTTAcceptor(opts || {}, cb);
 }
 exports.create = create;
 ;
