@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pomelo_logger_1 = require("pomelo-logger");
-var logger = pomelo_logger_1.getLogger('pomelo-rpc', 'InputBuffer');
+const pinus_logger_1 = require("pinus-logger");
+var logger = pinus_logger_1.getLogger('pinus-rpc', 'InputBuffer');
 const Utils = require("../utils");
 class InputBuffer {
     constructor(buffer) {

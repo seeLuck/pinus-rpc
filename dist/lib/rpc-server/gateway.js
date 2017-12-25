@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const defaultAcceptorFactory = require("./acceptor");
 const events_1 = require("events");
 const dispatcher_1 = require("./dispatcher");
-const Loader = require("pomelo-loader");
+const Loader = require("pinus-loader");
 const fs = require("fs");
 class Gateway extends events_1.EventEmitter {
     constructor(opts) {

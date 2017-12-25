@@ -1,10 +1,10 @@
-import { getLogger } from 'pomelo-logger'
-var logger = getLogger('pomelo-rpc', 'rpc-client');
+import { getLogger } from 'pinus-logger'
+var logger = getLogger('pinus-rpc', 'rpc-client');
 import { failureProcess } from './failureProcess';
 import { constants } from '../util/constants';
 import * as Station from './mailstation';
 import { Tracer } from '../util/tracer';
-import * as Loader from 'pomelo-loader';
+import * as Loader from 'pinus-loader';
 import * as utils from '../util/utils';
 import * as Proxy from '../util/proxy';
 import * as router from './router';
@@ -69,7 +69,7 @@ export class RpcClient
         {
             if (err)
             {
-                logger.error('[pomelo-rpc] client start fail for ' + err.stack);
+                logger.error('[pinus-rpc] client start fail for ' + err.stack);
                 return cb(err);
             }
             self._station.on('error', failureProcess.bind(self._station));
@@ -88,7 +88,7 @@ export class RpcClient
     {
         if (this.state !== STATE_STARTED)
         {
-            logger.warn('[pomelo-rpc] client is not running now.');
+            logger.warn('[pinus-rpc] client is not running now.');
             return;
         }
         this.state = STATE_CLOSED;
@@ -205,8 +205,8 @@ export class RpcClient
         if (this.state !== STATE_STARTED)
         {
             tracer && tracer.error('client', __filename, 'rpcInvoke', 'fail to do rpc invoke for client is not running');
-            logger.error('[pomelo-rpc] fail to do rpc invoke for client is not running');
-            cb(new Error('[pomelo-rpc] fail to do rpc invoke for client is not running'));
+            logger.error('[pinus-rpc] fail to do rpc invoke for client is not running');
+            cb(new Error('[pinus-rpc] fail to do rpc invoke for client is not running'));
             return;
         }
         this._station.dispatch(tracer, serverId, msg, this.opts, cb);
@@ -322,15 +322,15 @@ var proxyCB = function (client, serviceName, methodName, args, attach, isToSpeci
 {
     if (client.state !== STATE_STARTED)
     {
-        Promise.reject(new Error('[pomelo-rpc] fail to invoke rpc proxy for client is not running'));
+        Promise.reject(new Error('[pinus-rpc] fail to invoke rpc proxy for client is not running'));
         return;
     }
     if (args.length < 2)
     {
 
-        logger.error('[pomelo-rpc] invalid rpc invoke, arguments length less than 2, namespace: %j, serverType, %j, serviceName: %j, methodName: %j',
+        logger.error('[pinus-rpc] invalid rpc invoke, arguments length less than 2, namespace: %j, serverType, %j, serviceName: %j, methodName: %j',
             attach.namespace, attach.serverType, serviceName, methodName);
-        Promise.reject(new Error('[pomelo-rpc] invalid rpc invoke, arguments length less than 2'));
+        Promise.reject(new Error('[pinus-rpc] invalid rpc invoke, arguments length less than 2'));
         return;
     }
     var routeParam = args.shift();
@@ -424,7 +424,7 @@ var getRouteTarget = function (client, serverType, msg, routeParam, cb)
             target = client.router;
         } else
         {
-            logger.error('[pomelo-rpc] invalid route function.');
+            logger.error('[pinus-rpc] invalid route function.');
             return;
         }
         route.call(target, routeParam, msg, client._routeContext, function (err, serverId)
@@ -448,7 +448,7 @@ var rpcToSpecifiedServer = function (client, msg, serverType, serverId, cb)
 {
     if (typeof serverId !== 'string')
     {
-        logger.error('[pomelo-rpc] serverId is not a string : %s', serverId);
+        logger.error('[pinus-rpc] serverId is not a string : %s', serverId);
         return;
     }
     if (serverId === '*')
@@ -456,7 +456,7 @@ var rpcToSpecifiedServer = function (client, msg, serverType, serverId, cb)
         var servers = client._routeContext.getServersByType(serverType);
         if (!servers)
         {
-            logger.error('[pomelo-rpc] serverType %s servers not exist', serverType);
+            logger.error('[pinus-rpc] serverType %s servers not exist', serverType);
             return;
         }
 

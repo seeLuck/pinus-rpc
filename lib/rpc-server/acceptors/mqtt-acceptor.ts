@@ -1,5 +1,5 @@
-import { getLogger } from 'pomelo-logger'
-var logger = getLogger('pomelo-rpc', 'mqtt-acceptor');
+import { getLogger } from 'pinus-logger'
+var logger = getLogger('pinus-rpc', 'mqtt-acceptor');
 import { EventEmitter } from 'events';
 import { Tracer } from '../../util/tracer';
 import * as utils from '../../util/utils';

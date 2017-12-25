@@ -1,22 +1,22 @@
-#pomelo-rpc - rpc framework for pomelo
-pomelo-rpc是pomelo项目底层的rpc框架，提供了一个多服务器进程间进行rpc调用的基础设施。
-pomelo-rpc分为客户端和服务器端两个部分。
+#pinus-rpc - rpc framework for pinus
+pinus-rpc是pinus项目底层的rpc框架，提供了一个多服务器进程间进行rpc调用的基础设施。
+pinus-rpc分为客户端和服务器端两个部分。
 客户端部分提供了rpc代理生成，消息路由和网络通讯等功能，并支持动态添加代理和远程服务器配置。
 服务器端提供了远程服务暴露，请求派发，网络通讯等功能。
 
-远程服务代码加载由pomelo-loader模块完成，相关规则可以参考https://github.com/node-pomelo/pomelo-loader
+远程服务代码加载由pinus-loader模块完成，相关规则可以参考https://github.com/node-pinus/pinus-loader
 
 + Tags: node.js
 
 ##安装
 ```
-npm install pomelo-rpc
+npm install pinus-rpc
 ```
 
 ##用法
 ###Server
 ``` javascript
-var Server = require('pomelo-rpc').server;
+var Server = require('pinus-rpc').server;
 
 // remote service path info list
 var paths = [
@@ -32,7 +32,7 @@ console.log('rpc server started.');
 
 ###Client
 ``` javascript
-var Client = require('pomelo-rpc').client;
+var Client = require('pinus-rpc').client;
 
 // remote service interface path info list
 var records = [

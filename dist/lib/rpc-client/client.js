@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pomelo_logger_1 = require("pomelo-logger");
-var logger = pomelo_logger_1.getLogger('pomelo-rpc', 'rpc-client');
+const pinus_logger_1 = require("pinus-logger");
+var logger = pinus_logger_1.getLogger('pinus-rpc', 'rpc-client');
 const failureProcess_1 = require("./failureProcess");
 const constants_1 = require("../util/constants");
 const Station = require("./mailstation");
 const tracer_1 = require("../util/tracer");
-const Loader = require("pomelo-loader");
+const Loader = require("pinus-loader");
 const Proxy = require("../util/proxy");
 const router = require("./router");
 const async = require("async");
@@ -50,7 +50,7 @@ class RpcClient {
         var self = this;
         this._station.start(function (err) {
             if (err) {
-                logger.error('[pomelo-rpc] client start fail for ' + err.stack);
+                logger.error('[pinus-rpc] client start fail for ' + err.stack);
                 return cb(err);
             }
             self._station.on('error', failureProcess_1.failureProcess.bind(self._station));
@@ -67,7 +67,7 @@ class RpcClient {
      */
     stop(force) {
         if (this.state !== STATE_STARTED) {
-            logger.warn('[pomelo-rpc] client is not running now.');
+            logger.warn('[pinus-rpc] client is not running now.');
             return;
         }
         this.state = STATE_CLOSED;
@@ -168,8 +168,8 @@ class RpcClient {
         }
         if (this.state !== STATE_STARTED) {
             tracer && tracer.error('client', __filename, 'rpcInvoke', 'fail to do rpc invoke for client is not running');
-            logger.error('[pomelo-rpc] fail to do rpc invoke for client is not running');
-            cb(new Error('[pomelo-rpc] fail to do rpc invoke for client is not running'));
+            logger.error('[pinus-rpc] fail to do rpc invoke for client is not running');
+            cb(new Error('[pinus-rpc] fail to do rpc invoke for client is not running'));
             return;
         }
         this._station.dispatch(tracer, serverId, msg, this.opts, cb);
@@ -273,12 +273,12 @@ var generateProxy = function (client, record, context) {
  */
 var proxyCB = function (client, serviceName, methodName, args, attach, isToSpecifiedServer) {
     if (client.state !== STATE_STARTED) {
-        Promise.reject(new Error('[pomelo-rpc] fail to invoke rpc proxy for client is not running'));
+        Promise.reject(new Error('[pinus-rpc] fail to invoke rpc proxy for client is not running'));
         return;
     }
     if (args.length < 2) {
-        logger.error('[pomelo-rpc] invalid rpc invoke, arguments length less than 2, namespace: %j, serverType, %j, serviceName: %j, methodName: %j', attach.namespace, attach.serverType, serviceName, methodName);
-        Promise.reject(new Error('[pomelo-rpc] invalid rpc invoke, arguments length less than 2'));
+        logger.error('[pinus-rpc] invalid rpc invoke, arguments length less than 2, namespace: %j, serverType, %j, serviceName: %j, methodName: %j', attach.namespace, attach.serverType, serviceName, methodName);
+        Promise.reject(new Error('[pinus-rpc] invalid rpc invoke, arguments length less than 2'));
         return;
     }
     var routeParam = args.shift();
@@ -356,7 +356,7 @@ var getRouteTarget = function (client, serverType, msg, routeParam, cb) {
             target = client.router;
         }
         else {
-            logger.error('[pomelo-rpc] invalid route function.');
+            logger.error('[pinus-rpc] invalid route function.');
             return;
         }
         route.call(target, routeParam, msg, client._routeContext, function (err, serverId) {
@@ -376,13 +376,13 @@ var getRouteTarget = function (client, serverType, msg, routeParam, cb) {
  */
 var rpcToSpecifiedServer = function (client, msg, serverType, serverId, cb) {
     if (typeof serverId !== 'string') {
-        logger.error('[pomelo-rpc] serverId is not a string : %s', serverId);
+        logger.error('[pinus-rpc] serverId is not a string : %s', serverId);
         return;
     }
     if (serverId === '*') {
         var servers = client._routeContext.getServersByType(serverType);
         if (!servers) {
-            logger.error('[pomelo-rpc] serverType %s servers not exist', serverType);
+            logger.error('[pinus-rpc] serverType %s servers not exist', serverType);
             return;
         }
         async.each(servers, function (server, next) {

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pomelo_logger_1 = require("pomelo-logger");
-var logger = pomelo_logger_1.getLogger('pomelo-rpc', 'failprocess');
+const pinus_logger_1 = require("pinus-logger");
+var logger = pinus_logger_1.getLogger('pinus-rpc', 'failprocess');
 const constants_1 = require("../util/constants");
 function failureProcess(code, tracer, serverId, msg, opts) {
     var cb = tracer && tracer.cb;
@@ -65,7 +65,7 @@ var failover = function (code, tracer, serverId, msg, opts, cb) {
     }
     tracer && (tracer.servers = servers);
     if (!servers.length) {
-        logger.error('[pomelo-rpc] rpc failed with all this type of servers, with serverType: %s', serverType);
+        logger.error('[pinus-rpc] rpc failed with all this type of servers, with serverType: %s', serverType);
         cb(new Error('rpc failed with all this type of servers, with serverType: ' + serverType));
         return;
     }

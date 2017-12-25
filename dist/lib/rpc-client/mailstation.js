@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pomelo_logger_1 = require("pomelo-logger");
-var logger = pomelo_logger_1.getLogger('pomelo-rpc', 'MailStation');
+const pinus_logger_1 = require("pinus-logger");
+var logger = pinus_logger_1.getLogger('pinus-rpc', 'MailStation');
 const events_1 = require("events");
 // import * as blackhole from './mailboxes/blackhole';
 const defaultMailboxFactory = require("./mailbox");
@@ -62,7 +62,7 @@ class MailStation extends events_1.EventEmitter {
      */
     stop(force) {
         if (this.state !== STATE_STARTED) {
-            logger.warn('[pomelo-rpc] client is not running now.');
+            logger.warn('[pinus-rpc] client is not running now.');
             return;
         }
         this.state = STATE_CLOSED;
@@ -194,7 +194,7 @@ class MailStation extends events_1.EventEmitter {
         tracer && (tracer.cb = cb);
         if (this.state !== STATE_STARTED) {
             tracer && tracer.error('client', __filename, 'dispatch', 'client is not running now');
-            logger.error('[pomelo-rpc] client is not running now.');
+            logger.error('[pinus-rpc] client is not running now.');
             this.emit('error', constants_1.constants.RPC_ERROR.SERVER_NOT_STARTED, tracer, serverId, msg, opts);
             return;
         }
@@ -205,7 +205,7 @@ class MailStation extends events_1.EventEmitter {
             // try to connect remote server if mailbox instance not exist yet
             if (!lazyConnect(tracer, this, serverId, this.mailboxFactory, cb)) {
                 tracer && tracer.error('client', __filename, 'dispatch', 'fail to find remote server:' + serverId);
-                logger.error('[pomelo-rpc] fail to find remote server:' + serverId);
+                logger.error('[pinus-rpc] fail to find remote server:' + serverId);
                 self.emit('error', constants_1.constants.RPC_ERROR.NO_TRAGET_SERVER, tracer, serverId, msg, opts);
             }
             // push request to the pending queue
@@ -226,7 +226,7 @@ class MailStation extends events_1.EventEmitter {
             }
             if (!mailbox) {
                 tracer && tracer.error('client', __filename, 'send', 'can not find mailbox with id:' + serverId);
-                logger.error('[pomelo-rpc] could not find mailbox with id:' + serverId);
+                logger.error('[pinus-rpc] could not find mailbox with id:' + serverId);
                 self.emit('error', constants_1.constants.RPC_ERROR.FAIL_FIND_MAILBOX, tracer, serverId, msg, opts);
                 return;
             }
@@ -234,7 +234,7 @@ class MailStation extends events_1.EventEmitter {
                 // var tracer_send = arguments[0];
                 // var send_err = arguments[1];
                 if (send_err) {
-                    logger.error('[pomelo-rpc] fail to send message %s', send_err.stack || send_err.message);
+                    logger.error('[pinus-rpc] fail to send message %s', send_err.stack || send_err.message);
                     self.emit('error', constants_1.constants.RPC_ERROR.FAIL_SEND_MESSAGE, tracer, serverId, msg, opts);
                     cb && cb(send_err);
                     // utils.applyCallback(cb, send_err);
@@ -304,7 +304,7 @@ class MailStation extends events_1.EventEmitter {
         mailbox.connect(tracer, function (err) {
             if (!!err) {
                 tracer && tracer.error('client', __filename, 'lazyConnect', 'fail to connect to remote server: ' + serverId);
-                logger.error('[pomelo-rpc] mailbox fail to connect to remote server: ' + serverId);
+                logger.error('[pinus-rpc] mailbox fail to connect to remote server: ' + serverId);
                 if (!!self.mailboxes[serverId]) {
                     delete self.mailboxes[serverId];
                 }
@@ -372,11 +372,11 @@ var lazyConnect = function (tracer, station, serverId, factory, cb) {
     var server = station.servers[serverId];
     var online = station.onlines[serverId];
     if (!server) {
-        logger.error('[pomelo-rpc] unknown server: %s', serverId);
+        logger.error('[pinus-rpc] unknown server: %s', serverId);
         return false;
     }
     if (!online || online !== 1) {
-        logger.error('[pomelo-rpc] server is not online: %s', serverId);
+        logger.error('[pinus-rpc] server is not online: %s', serverId);
         return false;
     }
     var mailbox = factory.create(server, station.opts);
@@ -393,7 +393,7 @@ var addToPending = function (tracer, station, serverId, args) {
     }
     if (pending.length > station.pendingSize) {
         tracer && tracer.debug('client', __filename, 'addToPending', 'station pending too much for: ' + serverId);
-        logger.warn('[pomelo-rpc] station pending too much for: %s', serverId);
+        logger.warn('[pinus-rpc] station pending too much for: %s', serverId);
         return;
     }
     pending.push(args);
@@ -407,7 +407,7 @@ var flushPending = function (tracer, station, serverId, cb) {
     }
     if (!mailbox) {
         tracer && tracer.error('client', __filename, 'flushPending', 'fail to flush pending messages for empty mailbox: ' + serverId);
-        logger.error('[pomelo-rpc] fail to flush pending messages for empty mailbox: ' + serverId);
+        logger.error('[pinus-rpc] fail to flush pending messages for empty mailbox: ' + serverId);
     }
     for (var i = 0, l = pending.length; i < l; i++) {
         station.dispatch.apply(station, pending[i]);
@@ -419,7 +419,7 @@ var errorHandler = function (tracer, station, err, serverId, msg, opts, flag, cb
         station.handleError(err, serverId, msg, opts);
     }
     else {
-        logger.error('[pomelo-rpc] rpc filter error with serverId: %s, err: %j', serverId, err.stack);
+        logger.error('[pinus-rpc] rpc filter error with serverId: %s, err: %j', serverId, err.stack);
         station.emit('error', constants_1.constants.RPC_ERROR.FILTER_ERROR, tracer, serverId, msg, opts);
     }
 };

@@ -1,5 +1,5 @@
-import { getLogger } from 'pomelo-logger'
-var logger = getLogger('pomelo-rpc', 'failprocess');
+import { getLogger } from 'pinus-logger'
+var logger = getLogger('pinus-rpc', 'failprocess');
 import { constants } from '../util/constants';
 import * as utils from '../util/utils';
 
@@ -74,7 +74,7 @@ var failover = function (code, tracer, serverId, msg, opts, cb)
 
     if (!servers.length)
     {
-        logger.error('[pomelo-rpc] rpc failed with all this type of servers, with serverType: %s', serverType);
+        logger.error('[pinus-rpc] rpc failed with all this type of servers, with serverType: %s', serverType);
         cb(new Error('rpc failed with all this type of servers, with serverType: ' + serverType));
         return;
     }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Loader = require("pomelo-loader");
+const Loader = require("pinus-loader");
 const Gateway = require("./gateway");
 var loadRemoteServices = function (paths, context) {
     var res = {}, item, m;

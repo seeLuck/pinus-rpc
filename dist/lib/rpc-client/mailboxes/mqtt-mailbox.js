@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pomelo_logger_1 = require("pomelo-logger");
-var logger = pomelo_logger_1.getLogger('pomelo-rpc', 'mqtt-mailbox');
+const pinus_logger_1 = require("pinus-logger");
+var logger = pinus_logger_1.getLogger('pinus-rpc', 'mqtt-mailbox');
 const events_1 = require("events");
 const constants_1 = require("../../util/constants");
 const tracer_1 = require("../../util/tracer");

@@ -1,5 +1,5 @@
-import { getLogger } from 'pomelo-logger'
-var logger = getLogger('pomelo-rpc', 'rpc-proxy');
+import { getLogger } from 'pinus-logger'
+var logger = getLogger('pinus-rpc', 'rpc-proxy');
 
 /**
  * Create proxy.

@@ -1,7 +1,7 @@
 import * as defaultAcceptorFactory from './acceptor';
 import { EventEmitter } from 'events';
 import { Dispatcher } from './dispatcher';
-import * as Loader from 'pomelo-loader';
+import * as Loader from 'pinus-loader';
 import * as utils from '../util/utils';
 import * as util from 'util';
 import * as fs from 'fs';

@@ -1,5 +1,5 @@
-import { getLogger } from 'pomelo-logger'
-var logger = getLogger('pomelo-rpc', 'Coder');
+import { getLogger } from 'pinus-logger'
+var logger = getLogger('pinus-rpc', 'Coder');
 // import * as OutBuffer from ('./buffer/outputBuffer');
 // import * as InBuffer from ('./buffer/inputBuffer');
 import * as bBuffer from 'bearcat-buffer';

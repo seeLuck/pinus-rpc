@@ -1,8 +1,11 @@
 {
-	"name": "pomelo-rpc",
-	"version": "2.1.9",
+	"name": "pinus-rpc",
+	"version": "1.0.0",
 	"main": "./dist/index",
 	"types": "./dist/index.d.ts",
+	"scripts": {
+		"build": "node_modules/.bin/tsc"
+	},
 	"dependencies": {
 		"@types/async": "^2.0.45",
 		"@types/node": "^8.5.2",
@@ -11,13 +14,14 @@
 		"bearcat-buffer": "0.1.x",
 		"crc": "0.2.0",
 		"mqtt-connection": "^3.2.0",
-		"pomelo-loader": "1.0.2",
-		"pomelo-logger": "1.0.4",
+		"pinus-loader": "1.0.0",
+		"pinus-logger": "1.0.0",
 		"stream-pkg": "0.0.5",
 		"uuid": "^3.1.0"
 	},
 	"devDependencies": {
 		"mocha": ">=0.0.1",
-		"should": ">=0.0.1"
+		"should": ">=0.0.1",
+		"typescript": "^2.6.2"
 	}
 }

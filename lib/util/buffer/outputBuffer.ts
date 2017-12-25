@@ -1,5 +1,5 @@
-import { getLogger } from 'pomelo-logger'
-var logger = getLogger('pomelo-rpc', 'OutputBuffer');
+import { getLogger } from 'pinus-logger'
+var logger = getLogger('pinus-rpc', 'OutputBuffer');
 import * as Utils from '../utils';
 var BUFFER_SIZE_DEFAULT = 32;
 

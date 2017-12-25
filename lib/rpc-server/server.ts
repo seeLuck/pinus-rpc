@@ -1,4 +1,4 @@
-import * as Loader from 'pomelo-loader';
+import * as Loader from 'pinus-loader';
 import * as Gateway from './gateway';
 
 var loadRemoteServices = function (paths, context)
