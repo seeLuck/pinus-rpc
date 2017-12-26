@@ -1,4 +1,5 @@
 import { getLogger } from 'pinus-logger'
+import { listEs6ClassMethods } from './utils';
 var logger = getLogger('pinus-rpc', 'rpc-proxy');
 
 /**
@@ -32,12 +33,10 @@ var genObjectProxy = function (serviceName : string, origin : any, attach : Obje
 {
     //generate proxy for function field
     var res : {[key:string] : Function} = {};
-    for (var field in origin)
+    var proto = listEs6ClassMethods(origin);
+    for (var field of proto)
     {
-        if (typeof origin[field] === 'function')
-        {
-            res[field] = genFunctionProxy(serviceName, field, origin, attach, proxyCB);
-        }
+        res[field] = genFunctionProxy(serviceName, field, origin, attach, proxyCB);
     }
 
     return res;
@@ -54,7 +53,7 @@ var genObjectProxy = function (serviceName : string, origin : any, attach : Obje
  * @param proxyCB {Functoin} proxy callback function
  * @returns function proxy
  */
-var genFunctionProxy = function (serviceName : string, methodName : string, origin : string, attach : Object, proxyCB : Function)
+var genFunctionProxy = function (serviceName : string, methodName : string, origin : any, attach : Object, proxyCB : Function)
 {
     return (function ()
     {

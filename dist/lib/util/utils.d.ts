@@ -94,3 +94,8 @@ export declare var getType: (object: any) => any;
 export declare var typeArray: string[];
 export declare var typeMap: any;
 export declare var getBearcat: () => any;
+/**
+ * 列出ES6的一个Class实例上的所有方法，但不包括父类的
+ * @param objInstance
+ */
+export declare function listEs6ClassMethods(objInstance: Object): string[];

@@ -252,3 +252,21 @@ export var getBearcat = function ()
 {
     return require('bearcat');
 }
+
+/**
+ * 列出ES6的一个Class实例上的所有方法，但不包括父类的
+ * @param objInstance 
+ */
+export function listEs6ClassMethods(objInstance: Object)
+{
+    var names: string[] = [];
+    var methodNames = Object.getOwnPropertyNames(Object.getPrototypeOf(objInstance)).concat(Object.getOwnPropertyNames(objInstance));
+    for (let name of methodNames)
+    {
+        let method = objInstance[name];
+        // Supposedly you'd like to skip constructor
+        if (!(method instanceof Function) || name == "constructor") continue;
+        names.push(name);
+    }
+    return names;
+}

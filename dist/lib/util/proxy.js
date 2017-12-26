@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const pinus_logger_1 = require("pinus-logger");
+const utils_1 = require("./utils");
 var logger = pinus_logger_1.getLogger('pinus-rpc', 'rpc-proxy');
 /**
  * Create proxy.
@@ -28,10 +29,9 @@ exports.create = create;
 var genObjectProxy = function (serviceName, origin, attach, proxyCB) {
     //generate proxy for function field
     var res = {};
-    for (var field in origin) {
-        if (typeof origin[field] === 'function') {
-            res[field] = genFunctionProxy(serviceName, field, origin, attach, proxyCB);
-        }
+    var proto = utils_1.listEs6ClassMethods(origin);
+    for (var field of proto) {
+        res[field] = genFunctionProxy(serviceName, field, origin, attach, proxyCB);
     }
     return res;
 };
