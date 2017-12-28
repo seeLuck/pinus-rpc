@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/node-pinus/pinus-rpc.svg?branch=master)](https://travis-ci.org/node-pinus/pinus-rpc)
+
 #pinus-rpc - rpc framework for pinus
 pinus-rpc是pinus项目底层的rpc框架，提供了一个多服务器进程间进行rpc调用的基础设施。
 pinus-rpc分为客户端和服务器端两个部分。

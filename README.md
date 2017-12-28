@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/node-pinus/pinus-rpc.svg?branch=master)](https://travis-ci.org/node-pinus/pinus-rpc)
+
 #pinus-rpc - rpc framework for pinus
 
 pinus-rpc is the low level RPC framework for pinus project. It contains two parts: client and server.
