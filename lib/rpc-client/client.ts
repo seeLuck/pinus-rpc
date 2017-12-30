@@ -9,8 +9,12 @@ import * as utils from '../util/utils';
 import * as Proxy from '../util/proxy';
 import * as router from './router';
 import * as async from 'async';
-import {ServerInfo} from './mailstation'
+import {ServerInfo, MailStation, MailStationErrorHandler, RpcFilter} from './mailstation'
 import { ErrorCallback } from 'async';
+import { Logger } from 'log4js';
+import { MailBoxFactory } from './mailbox';
+import { ConsistentHash } from '../util/consistentHash';
+
 /**
  * Client states
  */
@@ -18,44 +22,60 @@ let STATE_INITED = 1; // client has inited
 let STATE_STARTED = 2; // client has started
 let STATE_CLOSED = 3; // client has closed
 
+export type Router = typeof router.df | {route : typeof router.df};
+export interface RouteContext
+{
+    getServersByType(serverType:string):ServerInfo[];
+}
+
+export type Proxies = {[namespace:string]:{[serverType:string]:{[attr:string]:Function}}}
+
 export interface RpcClientOpts 
 {
     context: string,
-    routeContext: any,
-    router: any,
+    routeContext: RouteContext,
+    router: Router,
     routerType: string,
-    rpcDebugLog: string,
+    rpcDebugLog: boolean,
     clientId: string,
     servers: {serverType: Array<ServerInfo>}, 
-    mailboxFactory: Function
+    mailboxFactory: MailBoxFactory,
+    rpcLogger: Logger,
+    station ?: MailStation,
+    hashFieldIndex ?: number;
 }
 
 export interface RpcMsg 
 { 
-    namespace: any; 
-    serverType: any;
+    namespace: string; 
+    serverType: string;
     service: string; 
     method: string; 
     args: any[]
 }
+
+
 /**
  * RPC Client Class
  */
 export class RpcClient
 {
     _context: any;
-    _routeContext: any;
-    router: any;
-    routerType: any;
-    rpcDebugLog: any;
-    opts: any;
-    proxies: any;
-    _station: any;
+    _routeContext: RouteContext;
+    router: Router;
+    routerType: string;
+    rpcDebugLog: boolean;
+    opts: Partial<RpcClientOpts>;
+    proxies: Proxies;
+    _station: MailStation;
     state: number;
 
-    constructor(opts: RpcClientOpts)
+    wrrParam ?: {[serverType:string] : {index:number,weight : number}};
+    chParam ?:  {[serverType:string] : {consistentHash:ConsistentHash}};
+
+    constructor(opts?: Partial<RpcClientOpts>)
     {
-        opts = opts || <any>{};
+        opts = opts || {};
         this._context = opts.context;
         this._routeContext = opts.routeContext;
         this.router = opts.router || router.df;
@@ -77,7 +97,7 @@ export class RpcClient
      *
      * @param cb {Function} cb(err)
      */
-    start(cb: Function)
+    start(cb: (err?:Error)=>void)
     {
         if (this.state > STATE_INITED)
         {
@@ -159,7 +179,7 @@ export class RpcClient
      *
      * @param {Object} server new server information
      */
-    addServer(server: {namespace: string, serverType: string, path: string})
+    addServer(server: ServerInfo)
     {
         this._station.addServer(server);
     };
@@ -169,7 +189,7 @@ export class RpcClient
      *
      * @param {Array} servers server info list
      */
-    addServers(servers: {namespace: string, serverType: string, path: string}[])
+    addServers(servers: ServerInfo[])
     {
         this._station.addServers(servers);
     };
@@ -199,7 +219,7 @@ export class RpcClient
      *
      * @param {Array} servers server info list
      */
-    replaceServers(servers: {namespace: string, serverType: string, path: string}[])
+    replaceServers(servers: ServerInfo[])
     {
         this._station.replaceServers(servers);
     };
@@ -212,10 +232,10 @@ export class RpcClient
      *    {serverType: serverType, service: serviceName, method: methodName, args: arguments}
      * @param cb {Function} cb(err, ...)
      */
-    rpcInvoke(serverId: string, msg: RpcMsg, cb: Function)
+    rpcInvoke(serverId: string, msg: RpcMsg, cb: (err : Error , ...args : any[])=>void)
     {
         let rpcDebugLog = this.rpcDebugLog;
-        let tracer = null;
+        let tracer :Tracer;
 
         if (rpcDebugLog)
         {
@@ -240,7 +260,7 @@ export class RpcClient
      *
      * @api public
      */
-    before(filter: Function)
+    before(filter: RpcFilter | RpcFilter[])
     {
         this._station.before(filter);
     };
@@ -252,7 +272,7 @@ export class RpcClient
      *
      * @api public
      */
-    after(filter: Function)
+    after(filter: RpcFilter | RpcFilter[])
     {
         this._station.after(filter);
     };
@@ -264,7 +284,7 @@ export class RpcClient
      *
      * @api public
      */
-    filter(filter: Function)
+    filter(filter: RpcFilter)
     {
         this._station.filter(filter);
     };
@@ -276,7 +296,7 @@ export class RpcClient
      *
      * @api public
      */
-    setErrorHandler(handler: Function)
+    setErrorHandler(handler: MailStationErrorHandler)
     {
         this._station.handleError = handler;
     };
@@ -289,7 +309,7 @@ export class RpcClient
  *
  * @api private
  */
-let createStation = function (opts: RpcClientOpts)
+let createStation = function (opts: Partial<RpcClientOpts>)
 {
     return Station.create(opts);
 };
@@ -405,7 +425,7 @@ let proxyCB = function (client: RpcClient, serviceName: string, methodName: stri
  *
  * @api private
  */
-let getRouteTarget = function (client: RpcClient, serverType: string, msg: RpcMsg, routeParam: object, cb: Function)
+let getRouteTarget = function (client: RpcClient, serverType: string, msg: RpcMsg, routeParam: object, cb: (err: Error, serverId:string)=>void)
 {
     if (!!client.routerType)
     {
@@ -465,7 +485,7 @@ let getRouteTarget = function (client: RpcClient, serverType: string, msg: RpcMs
  *
  * @api private
  */
-let rpcToSpecifiedServer = function (client: RpcClient, msg: RpcMsg, serverType: object, serverId: string, cb: ErrorCallback<{}>)
+let rpcToSpecifiedServer = function (client: RpcClient, msg: RpcMsg, serverType: string, serverId: string, cb: ErrorCallback<{}>)
 {
     if (typeof serverId !== 'string')
     {
@@ -481,7 +501,7 @@ let rpcToSpecifiedServer = function (client: RpcClient, msg: RpcMsg, serverType:
             return;
         }
 
-        async.each(servers, function (server: {[key: string]: string}, next)
+        async.each(servers, function (server, next)
         {
             let serverId = server['id'];
             client.rpcInvoke(serverId, msg, function (err: Error)
@@ -505,7 +525,7 @@ let rpcToSpecifiedServer = function (client: RpcClient, msg: RpcMsg, serverType:
  *
  * @api private
  */
-let insertProxy = function (proxies: {[key: string]:any}, namespace: string, serverType: string, proxy: {[key: string]:any})
+let insertProxy = function (proxies: Proxies, namespace: string, serverType: string, proxy: {[key: string]:any})
 {
     proxies[namespace] = proxies[namespace] || {};
     if (proxies[namespace][serverType])

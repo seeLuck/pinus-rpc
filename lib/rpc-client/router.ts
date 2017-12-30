@@ -87,7 +87,7 @@ let rrRoute = function (client: RpcClient & {rrParam: any}, serverType: string, 
  * @param msg {Object} rpc message.
  * @param cb {Function} cb(err, serverId).
  */
-let wrrRoute = function (client:RpcClient & {wrrParam: any}, serverType:string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
+let wrrRoute = function (client:RpcClient, serverType:string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
 {
     let servers = client._station.serversMap[serverType];
     if (!servers || !servers.length)
@@ -220,7 +220,7 @@ let laRoute = function (client:RpcClient & {laParam: any}, serverType:string, ms
  * @param msg {Object} rpc message.
  * @param cb {Function} cb(err, serverId).
  */
-let chRoute = function (client:RpcClient & {chParam: any}, serverType:string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
+let chRoute = function (client:RpcClient , serverType:string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
 {
     let servers = client._station.serversMap[serverType];
     if (!servers || !servers.length)
@@ -228,7 +228,7 @@ let chRoute = function (client:RpcClient & {chParam: any}, serverType:string, ms
         return cb(new Error('rpc servers not exist with serverType: ' + serverType));
     }
 
-    let index, con;
+    let index : number, con : ConsistentHash;
     if (!client.chParam)
     {
         client.chParam = {};
@@ -239,7 +239,7 @@ let chRoute = function (client:RpcClient & {chParam: any}, serverType:string, ms
     } else
     {
         client.opts.station = client._station;
-        con = new ConsistentHash(servers, client.opts);
+        con = new ConsistentHash(servers.map(id=>client._station.servers[id]), client.opts);
     }
     let hashFieldIndex = client.opts.hashFieldIndex;
     let field = msg.args[hashFieldIndex] || JSON.stringify(msg);

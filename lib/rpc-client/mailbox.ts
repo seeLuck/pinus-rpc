@@ -2,8 +2,11 @@
  * Default mailbox factory
  */
 import * as Mailbox from './mailboxes/mqtt-mailbox';
+import { MailBox } from './mailboxes/mqtt-mailbox';
 // var Ws2Mailbox from ('./mailboxes/ws2-mailbox');
 // var WsMailbox from ('./mailboxes/ws-mailbox');
+
+export type MailBoxFactory =  (serverInfo: {id: string, host: string, port:number}, opts: Mailbox.MailBoxOpts)=>MailBox;
 
 /**
  * default mailbox factory

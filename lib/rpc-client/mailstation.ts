@@ -2,28 +2,40 @@ import { getLogger } from 'pinus-logger'
 let logger = getLogger('pinus-rpc', 'MailStation');
 import { EventEmitter } from 'events';
 // import * as blackhole from './mailboxes/blackhole';
-import * as defaultMailboxFactory from './mailbox';
+import {create as defaultMailboxFactory, MailBoxFactory} from './mailbox';
 import { constants } from '../util/constants';
 import * as utils from '../util/utils';
 import * as util from 'util';
 import { Tracer } from '../util/tracer';
+import { MailBox, MailBoxMessage } from './mailboxes/mqtt-mailbox';
 
 let STATE_INITED = 1; // station has inited
 let STATE_STARTED = 2; // station has started
 let STATE_CLOSED = 3; // station has closed
 
 export interface MailStationOpts {
-    mailboxFactory: Function,
-    pendingSize: number
+    mailboxFactory?: typeof defaultMailboxFactory,
+    pendingSize?: number
 }
 
 export interface ServerInfo
 { 
-    id: number, 
+    id: string, 
     host: string, 
     port: string, 
-    serverType: string
+    serverType: string,
+    weight ?: number,
 }
+
+export type RpcFilterFunction = (serverId : string, msg : any, opts : any, cb : (target: string, message: any, options: any)=>void)=>void;
+export interface IRpcFilter
+{
+    name : string;
+    before ?: RpcFilterFunction;
+    after ?: RpcFilterFunction;
+}
+export type RpcFilter = RpcFilterFunction | IRpcFilter;
+export type MailStationErrorHandler = (err : Error, serverId : string, msg : any, opts : any)=>void
 /**
  * Mail station constructor.
  *
@@ -32,30 +44,31 @@ export interface ServerInfo
 export class MailStation extends EventEmitter
 {
 
-    servers = {}; // remote server info map, key: server id, value: info
-    serversMap = {}; // remote server info map, key: serverType, value: servers array
-    onlines = {}; // remote server online map, key: server id, value: 0/offline 1/online
+    servers : {[serverId:string] : ServerInfo} = {}; // remote server info map, key: server id, value: info
+    serversMap : {[serverType:string] : string[]} = {}; // remote server info map, key: serverType, value: servers array
+    onlines : {[serverId:string] : number} = {}; // remote server online map, key: server id, value: 0/offline 1/online
 
     // filters
-    befores: Array<any> = [];
-    afters: Array<any> = [];
+    befores: Array<RpcFilter> = [];
+    afters: Array<RpcFilter> = [];
 
     // pending request queues
-    pendings = {};
+    pendings : {[serverId:string]:IArguments[]} = {};
 
+    handleError ?: MailStationErrorHandler;
 
     // connecting remote server mailbox map
-    connecting = {};
+    connecting : {[serverId:string]:boolean} = {};
 
     // working mailbox map
-    mailboxes = {};
+    mailboxes : {[serverId:string] : MailBox} = {};
 
     state = STATE_INITED;
 
-    opts: any;
-    mailboxFactory: any;
+    opts: MailStationOpts;
+    mailboxFactory: MailBoxFactory;
     pendingSize: number;
-    constructor(opts: MailStationOpts)
+    constructor(opts?: MailStationOpts)
     {
         super();
         this.opts = opts;
@@ -71,7 +84,7 @@ export class MailStation extends EventEmitter
      * @param  {Function} cb(err) callback function
      * @return {Void}
      */
-    start(cb: Function)
+    start(cb: (err?:Error)=>void)
     {
         if (this.state > STATE_INITED)
         {
@@ -126,7 +139,7 @@ export class MailStation extends EventEmitter
      *
      * @param {Object} serverInfo server info such as {id, host, port}
      */
-    addServer(this:any, serverInfo: ServerInfo)
+    addServer(serverInfo: ServerInfo)
     {
         if (!serverInfo || !serverInfo.id)
         {
@@ -254,10 +267,10 @@ export class MailStation extends EventEmitter
      * @param  {Function} cb       callback function
      * @return {Void}
      */
-    dispatch(this:any, tracer: Tracer & {cb: Function}, serverId: string, msg: object, opts: object, cb: Function)
+    dispatch(tracer: Tracer, serverId: string, msg: MailBoxMessage, opts: object, cb:  (err : Error , ...args : any[])=>void)
     {
         tracer && tracer.info('client', __filename, 'dispatch', 'dispatch rpc message to the mailbox');
-        tracer && (tracer.cb = cb);
+        //tracer && (tracer.cb = cb);
         if (this.state !== STATE_STARTED)
         {
             tracer && tracer.error('client', __filename, 'dispatch', 'client is not running now');
@@ -291,7 +304,7 @@ export class MailStation extends EventEmitter
             return;
         }
 
-        let send = function (tracer: Tracer, err: Error, serverId: string, msg: object, opts: object)
+        let send = function (tracer: Tracer, err: Error, serverId: string, msg: MailBoxMessage, opts: object)
         {
             tracer && tracer.info('client', __filename, 'send', 'get corresponding mailbox and try to send message');
             let mailbox = self.mailboxes[serverId];
@@ -339,7 +352,7 @@ export class MailStation extends EventEmitter
      * @param  {[type]} filter [description]
      * @return {[type]}        [description]
      */
-    before(filter: object)
+    before(filter: RpcFilter | RpcFilter[])
     {
         if (Array.isArray(filter))
         {
@@ -355,7 +368,7 @@ export class MailStation extends EventEmitter
      * @param  {[type]} filter [description]
      * @return {[type]}        [description]
      */
-    after(filter: object)
+    after(filter: RpcFilter | RpcFilter[])
     {
         if (Array.isArray(filter))
         {
@@ -371,7 +384,7 @@ export class MailStation extends EventEmitter
      * @param  {[type]} filter [description]
      * @return {[type]}        [description]
      */
-    filter(filter: object)
+    filter(filter: RpcFilter)
     {
         this.befores.push(filter);
         this.afters.push(filter);
@@ -419,7 +432,7 @@ export class MailStation extends EventEmitter
 /**
  * Do before or after filter
  */
-let doFilter = function (this:any, tracer: Tracer, err: Error, serverId: string, msg: object, opts: object, filters: Array<any>, index: number, operate: string, cb:Function)
+let doFilter = function (this:any, tracer: Tracer, err: Error, serverId: string, msg: MailBoxMessage, opts: object, filters: Array<RpcFilter>, index: number, operate: 'before' | 'after', cb:Function)
 {
     if (index < filters.length)
     {
@@ -431,10 +444,10 @@ let doFilter = function (this:any, tracer: Tracer, err: Error, serverId: string,
         return;
     }
     let self = this;
-    let filter: {[key: string]: Function} = filters[index];
+    let filter = filters[index];
     if (typeof filter === 'function')
     {
-        filter(serverId, msg, opts, function (target: any, message: object, options: object)
+        filter(serverId, msg, opts, function (target: any, message: MailBoxMessage, options: object)
         {
             index++;
             //compatible for pomelo filter next(err) method
@@ -450,7 +463,7 @@ let doFilter = function (this:any, tracer: Tracer, err: Error, serverId: string,
     }
     if (typeof filter[operate] === 'function')
     {
-        filter[operate](serverId, msg, opts, function (target: Error&string, message:object, options:any)
+        filter[operate](serverId, msg, opts, function (target: Error&string, message:MailBoxMessage, options:any)
         {
             index++;
             if (utils.getObjectClass(target) === 'Error')
@@ -527,7 +540,7 @@ let flushPending = function (tracer: Tracer, station: {[key:string]: any}, serve
     delete station.pendings[serverId];
 };
 
-let errorHandler = function (tracer: Tracer, station: {[key:string]: any}, err: Error, serverId: string, msg: object, opts: object, flag: boolean, cb: Function)
+let errorHandler = function (tracer: Tracer, station: MailStation, err: Error, serverId: string, msg: object, opts: object, flag: boolean, cb: Function)
 {
     if (!!station.handleError)
     {
@@ -547,7 +560,7 @@ let errorHandler = function (tracer: Tracer, station: {[key:string]: any}, err: 
  *           opts.mailboxFactory {Function} mailbox factory function
  * @return {Object}      mail station instance
  */
-export function create(opts: {servers: {serverType: Array<ServerInfo>}, mailboxFactory: Function})
+export function create(opts?: MailStationOpts, mailboxFactory?: MailBoxFactory)
 {
-    return new MailStation(opts || <any>{});
+    return new MailStation(opts || {});
 };
