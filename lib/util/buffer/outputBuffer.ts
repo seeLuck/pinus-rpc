@@ -1,7 +1,7 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'OutputBuffer');
+let logger = getLogger('pinus-rpc', 'OutputBuffer');
 import * as Utils from '../utils';
-var BUFFER_SIZE_DEFAULT = 32;
+let BUFFER_SIZE_DEFAULT = 32;
 
 export class OutputBuffer
 {
@@ -9,7 +9,7 @@ export class OutputBuffer
 	size: number;
 	offset: number = 0;
 	buf: Buffer;
-	constructor(size)
+	constructor(size?: number)
 	{
 		this.size = size || BUFFER_SIZE_DEFAULT;
 		this.buf = new Buffer(this.size);
@@ -25,99 +25,99 @@ export class OutputBuffer
 		return this.count;
 	}
 
-	write(data, offset, len)
+	write(data: string, offset: number, len: number)
 	{
 		this.ensureCapacity(len);
 		this.buf.write(data, offset, len);
 		this.count += len;
 	}
 
-	writeBoolean(v)
+	writeBoolean(v: boolean)
 	{
 		this.writeByte(v ? 1 : 0);
 	}
 
-	writeByte(v)
+	writeByte(v: number)
 	{
 		this.ensureCapacity(1);
 		this.buf.writeUInt8(v, this.count++);
 	}
 
-	writeBytes(bytes)
+	writeBytes(bytes: Array<number>)
 	{
-		var len = bytes.length;
+		let len = bytes.length;
 		this.ensureCapacity(len + 4);
 		this.writeInt(len);
-		for (var i = 0; i < len; i++)
+		for (let i = 0; i < len; i++)
 		{
 			this.buf.writeUInt8(bytes[i], this.count++);
 		}
 	}
 
-	writeChar(v)
+	writeChar(v: number)
 	{
 		this.writeByte(v);
 	}
 
-	writeChars(bytes)
+	writeChars(bytes: Array<number>)
 	{
 		this.writeBytes(bytes);
 	}
 
-	writeDouble(v)
+	writeDouble(v: number)
 	{
 		this.ensureCapacity(8);
 		this.buf.writeDoubleLE(v, this.count);
 		this.count += 8;
 	}
 
-	writeFloat(v)
+	writeFloat(v: number)
 	{
 		this.ensureCapacity(4);
 		this.buf.writeFloatLE(v, this.count);
 		this.count += 4;
 	}
 
-	writeInt(v)
+	writeInt(v: number)
 	{
 		this.ensureCapacity(4);
 		this.buf.writeInt32LE(v, this.count);
 		this.count += 4;
 	}
 
-	writeShort(v)
+	writeShort(v: number)
 	{
 		this.ensureCapacity(2);
 		this.buf.writeInt16LE(v, this.count);
 		this.count += 2;
 	}
 
-	writeUInt(v)
+	writeUInt(v: number)
 	{
 		this.ensureCapacity(4);
 		this.buf.writeUInt32LE(v, this.count);
 		this.count += 4;
 	}
 
-	writeUShort(v)
+	writeUShort(v: number)
 	{
 		this.ensureCapacity(2);
 		this.buf.writeUInt16LE(v, this.count);
 		this.count += 2;
 	}
 
-	writeString(str)
+	writeString(str: string)
 	{
-		var len = Buffer.byteLength(str);
+		let len = Buffer.byteLength(str);
 		this.ensureCapacity(len + 4);
 		this.writeInt(len);
 		this.buf.write(str, this.count, len);
 		this.count += len;
 	}
 
-	writeObject(object)
+	writeObject(object: any)
 	{
-		var type = Utils.getType(object);
+		let type = Utils.getType(object);
 		// console.log('writeObject type %s', type);
 		// console.log(object)
 		if (!type)
@@ -128,7 +128,7 @@ export class OutputBuffer
 
 		this.writeShort(type);
 
-		var typeMap = Utils.typeMap;
+		let typeMap = Utils.typeMap;
 
 		if (typeMap['null'] == type)
 		{
@@ -143,9 +143,9 @@ export class OutputBuffer
 
 		if (typeMap['array'] == type)
 		{
-			var len = object.length;
+			let len = object.length;
 			this.writeInt(len);
-			for (var i = 0; i < len; i++)
+			for (let i = 0; i < len; i++)
 			{
 				this.writeObject(object[i]);
 			}
@@ -191,19 +191,19 @@ export class OutputBuffer
 		}
 	}
 
-	ensureCapacity(len)
+	ensureCapacity(len: number)
 	{
-		var minCapacity = this.count + len;
+		let minCapacity = this.count + len;
 		if (minCapacity > this.buf.length)
 		{
 			this.grow(minCapacity); // double grow
 		}
 	}
 
-	grow(minCapacity)
+	grow(minCapacity: number)
 	{
-		var oldCapacity = this.buf.length;
-		var newCapacity = oldCapacity << 1;
+		let oldCapacity = this.buf.length;
+		let newCapacity = oldCapacity << 1;
 		if (newCapacity - minCapacity < 0)
 		{
 			newCapacity = minCapacity;
@@ -216,7 +216,7 @@ export class OutputBuffer
 		}
 
 		// console.log('grow minCapacity %d newCapacity %d', minCapacity, newCapacity);
-		var newBuf = new Buffer(newCapacity);
+		let newBuf = new Buffer(newCapacity);
 		this.buf.copy(newBuf);
 		this.buf = newBuf;
 	}

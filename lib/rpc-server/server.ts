@@ -1,11 +1,11 @@
 import * as Loader from 'pinus-loader';
 import * as Gateway from './gateway';
 
-var loadRemoteServices = function (paths, context)
+ let loadRemoteServices = function (paths: Array<Gateway.RemoteServerCode>, context: object): object
 {
-    var res = {},
-        item, m;
-    for (var i = 0, l = paths.length; i < l; i++)
+    let res: {[key:string]: any} = {},
+        item, m: {[key:string]: any};
+    for (let i = 0, l = paths.length; i < l; i++)
     {
         item = paths[i];
         m = Loader.load(item.path, context);
@@ -13,7 +13,7 @@ var loadRemoteServices = function (paths, context)
         if (m)
         {
             createNamespace(item.namespace, res);
-            for (var s in m)
+            for (let s in m)
             {
                 res[item.namespace][s] = m[s];
             }
@@ -23,7 +23,7 @@ var loadRemoteServices = function (paths, context)
     return res;
 };
 
-var createNamespace = function (namespace, proxies)
+let createNamespace = function (namespace: string, proxies: {[key:string]: any})
 {
     proxies[namespace] = proxies[namespace] || {};
 };
@@ -38,15 +38,16 @@ var createNamespace = function (namespace, proxies)
  *                       opts.acceptorFactory {Object} (optionals)acceptorFactory.create(opts, cb)
  * @return {Object}      rpc server instance
  */
-export function create(opts)
+
+export function create(opts: Gateway.RpcServerOpts)
 {
     if (!opts || !opts.port || opts.port < 0 || !opts.paths)
     {
         throw new Error('opts.port or opts.paths invalid.');
     }
-    var services = loadRemoteServices(opts.paths, opts.context);
+    let services = loadRemoteServices(opts.paths, opts.context);
     opts.services = services;
-    var gateway = Gateway.create(opts);
+    let gateway = Gateway.create(opts);
     return gateway;
 };
 

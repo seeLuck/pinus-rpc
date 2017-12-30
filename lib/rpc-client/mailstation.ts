@@ -1,16 +1,29 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'MailStation');
+let logger = getLogger('pinus-rpc', 'MailStation');
 import { EventEmitter } from 'events';
 // import * as blackhole from './mailboxes/blackhole';
 import * as defaultMailboxFactory from './mailbox';
 import { constants } from '../util/constants';
 import * as utils from '../util/utils';
 import * as util from 'util';
+import { Tracer } from '../util/tracer';
 
-var STATE_INITED = 1; // station has inited
-var STATE_STARTED = 2; // station has started
-var STATE_CLOSED = 3; // station has closed
+let STATE_INITED = 1; // station has inited
+let STATE_STARTED = 2; // station has started
+let STATE_CLOSED = 3; // station has closed
 
+export interface MailStationOpts {
+    mailboxFactory: Function,
+    pendingSize: number
+}
+
+export interface ServerInfo
+{ 
+    id: number, 
+    host: string, 
+    port: string, 
+    serverType: string
+}
 /**
  * Mail station constructor.
  *
@@ -24,8 +37,8 @@ export class MailStation extends EventEmitter
     onlines = {}; // remote server online map, key: server id, value: 0/offline 1/online
 
     // filters
-    befores = [];
-    afters = [];
+    befores: Array<any> = [];
+    afters: Array<any> = [];
 
     // pending request queues
     pendings = {};
@@ -42,7 +55,7 @@ export class MailStation extends EventEmitter
     opts: any;
     mailboxFactory: any;
     pendingSize: number;
-    constructor(opts)
+    constructor(opts: MailStationOpts)
     {
         super();
         this.opts = opts;
@@ -58,7 +71,7 @@ export class MailStation extends EventEmitter
      * @param  {Function} cb(err) callback function
      * @return {Void}
      */
-    start(cb)
+    start(cb: Function)
     {
         if (this.state > STATE_INITED)
         {
@@ -66,7 +79,7 @@ export class MailStation extends EventEmitter
             return;
         }
 
-        var self = this;
+        let self = this;
         process.nextTick(function ()
         {
             self.state = STATE_STARTED;
@@ -80,7 +93,7 @@ export class MailStation extends EventEmitter
      * @param  {Boolean} force whether stop station forcely
      * @return {Void}
      */
-    stop(force)
+    stop(force: boolean)
     {
         if (this.state !== STATE_STARTED)
         {
@@ -89,11 +102,11 @@ export class MailStation extends EventEmitter
         }
         this.state = STATE_CLOSED;
 
-        var self = this;
+        let self: {[key: string]: any} = this;
 
         function closeAll()
         {
-            for (var id in self.mailboxes)
+            for (let id in self.mailboxes)
             {
                 self.mailboxes[id].close();
             }
@@ -113,15 +126,15 @@ export class MailStation extends EventEmitter
      *
      * @param {Object} serverInfo server info such as {id, host, port}
      */
-    addServer(serverInfo)
+    addServer(this:any, serverInfo: ServerInfo)
     {
         if (!serverInfo || !serverInfo.id)
         {
             return;
         }
 
-        var id = serverInfo.id;
-        var type = serverInfo.serverType;
+        let id = serverInfo.id;
+        let type = serverInfo.serverType;
         this.servers[id] = serverInfo;
         this.onlines[id] = 1;
 
@@ -142,14 +155,14 @@ export class MailStation extends EventEmitter
      *
      * @param {Array} serverInfos server info list
      */
-    addServers(serverInfos)
+    addServers(serverInfos: Array<ServerInfo>)
     {
         if (!serverInfos || !serverInfos.length)
         {
             return;
         }
 
-        for (var i = 0, l = serverInfos.length; i < l; i++)
+        for (let i = 0, l = serverInfos.length; i < l; i++)
         {
             this.addServer(serverInfos[i]);
         }
@@ -161,10 +174,10 @@ export class MailStation extends EventEmitter
      *
      * @param  {String|Number} id server id
      */
-    removeServer(id)
+    removeServer(this:any, id: string|number)
     {
         this.onlines[id] = 0;
-        var mailbox = this.mailboxes[id];
+        let mailbox = this.mailboxes[id];
         if (mailbox)
         {
             mailbox.close();
@@ -178,14 +191,14 @@ export class MailStation extends EventEmitter
      *
      * @param  {Array} ids server id list
      */
-    removeServers(ids)
+    removeServers(ids: Array<string|number>)
     {
         if (!ids || !ids.length)
         {
             return;
         }
 
-        for (var i = 0, l = ids.length; i < l; i++)
+        for (let i = 0, l = ids.length; i < l; i++)
         {
             this.removeServer(ids[i]);
         }
@@ -206,7 +219,7 @@ export class MailStation extends EventEmitter
      *
      * @param {Array} serverInfos server info list
      */
-    replaceServers(serverInfos)
+    replaceServers(this:any, serverInfos: Array<ServerInfo>)
     {
         this.clearStation();
         if (!serverInfos || !serverInfos.length)
@@ -214,10 +227,10 @@ export class MailStation extends EventEmitter
             return;
         }
 
-        for (var i = 0, l = serverInfos.length; i < l; i++)
+        for (let i = 0, l = serverInfos.length; i < l; i++)
         {
-            var id = serverInfos[i].id;
-            var type = serverInfos[i].serverType;
+            let id = serverInfos[i].id;
+            let type = serverInfos[i].serverType;
             this.onlines[id] = 1;
             if (!this.serversMap[type])
             {
@@ -241,7 +254,7 @@ export class MailStation extends EventEmitter
      * @param  {Function} cb       callback function
      * @return {Void}
      */
-    dispatch(tracer, serverId, msg, opts, cb)
+    dispatch(this:any, tracer: Tracer & {cb: Function}, serverId: string, msg: object, opts: object, cb: Function)
     {
         tracer && tracer.info('client', __filename, 'dispatch', 'dispatch rpc message to the mailbox');
         tracer && (tracer.cb = cb);
@@ -253,8 +266,8 @@ export class MailStation extends EventEmitter
             return;
         }
 
-        var self = this;
-        var mailbox = this.mailboxes[serverId];
+        let self = this;
+        let mailbox = this.mailboxes[serverId];
         if (!mailbox)
         {
             tracer && tracer.debug('client', __filename, 'dispatch', 'mailbox is not exist');
@@ -278,10 +291,10 @@ export class MailStation extends EventEmitter
             return;
         }
 
-        var send = function (tracer, err, serverId, msg, opts)
+        let send = function (tracer: Tracer, err: Error, serverId: string, msg: object, opts: object)
         {
             tracer && tracer.info('client', __filename, 'send', 'get corresponding mailbox and try to send message');
-            var mailbox = self.mailboxes[serverId];
+            let mailbox = self.mailboxes[serverId];
             if (err)
             {
                 return errorHandler(tracer, self, err, serverId, msg, opts, true, cb);
@@ -293,10 +306,10 @@ export class MailStation extends EventEmitter
                 self.emit('error', constants.RPC_ERROR.FAIL_FIND_MAILBOX, tracer, serverId, msg, opts);
                 return;
             }
-            mailbox.send(tracer, msg, opts, function (tracer_send, send_err, args)
+            mailbox.send(tracer, msg, opts, function (tracer_send: Tracer, send_err: Error, args: Array<any>)
             {
-                // var tracer_send = arguments[0];
-                // var send_err = arguments[1];
+                // let tracer_send = arguments[0];
+                // let send_err = arguments[1];
                 if (send_err)
                 {
                     logger.error('[pinus-rpc] fail to send message %s', send_err.stack || send_err.message);
@@ -305,8 +318,8 @@ export class MailStation extends EventEmitter
                     // utils.applyCallback(cb, send_err);
                     return;
                 }
-                // var args = arguments[2];
-                doFilter(tracer_send, null, serverId, msg, opts, self.afters, 0, 'after', function (tracer, err, serverId, msg, opts)
+                // let args = arguments[2];
+                doFilter(tracer_send, null, serverId, msg, opts, self.afters, 0, 'after', function (tracer:Tracer, err:Error, serverId:string, msg: object, opts:any)
                 {
                     if (err)
                     {
@@ -326,7 +339,7 @@ export class MailStation extends EventEmitter
      * @param  {[type]} filter [description]
      * @return {[type]}        [description]
      */
-    before(filter)
+    before(filter: object)
     {
         if (Array.isArray(filter))
         {
@@ -342,7 +355,7 @@ export class MailStation extends EventEmitter
      * @param  {[type]} filter [description]
      * @return {[type]}        [description]
      */
-    after(filter)
+    after(filter: object)
     {
         if (Array.isArray(filter))
         {
@@ -358,7 +371,7 @@ export class MailStation extends EventEmitter
      * @param  {[type]} filter [description]
      * @return {[type]}        [description]
      */
-    filter(filter)
+    filter(filter: object)
     {
         this.befores.push(filter);
         this.afters.push(filter);
@@ -371,11 +384,11 @@ export class MailStation extends EventEmitter
      * @return {String}   serverId remote server id
      * @param  {Function}   cb     callback function
      */
-    connect(tracer, serverId, cb)
+    connect(this:any, tracer: Tracer, serverId: string, cb: Function)
     {
-        var self = this;
-        var mailbox = self.mailboxes[serverId];
-        mailbox.connect(tracer, function (err)
+        let self = this;
+        let mailbox = self.mailboxes[serverId];
+        mailbox.connect(tracer, function (err: Error)
         {
             if (!!err)
             {
@@ -388,9 +401,9 @@ export class MailStation extends EventEmitter
                 self.emit('error', constants.RPC_ERROR.FAIL_CONNECT_SERVER, tracer, serverId, null, self.opts);
                 return;
             }
-            mailbox.on('close', function (id)
+            mailbox.on('close', function (id: number)
             {
-                var mbox = self.mailboxes[id];
+                let mbox = self.mailboxes[id];
                 if (!!mbox)
                 {
                     mbox.close();
@@ -406,7 +419,7 @@ export class MailStation extends EventEmitter
 /**
  * Do before or after filter
  */
-var doFilter = function (tracer, err, serverId, msg, opts, filters, index, operate, cb)
+let doFilter = function (this:any, tracer: Tracer, err: Error, serverId: string, msg: object, opts: object, filters: Array<any>, index: number, operate: string, cb:Function)
 {
     if (index < filters.length)
     {
@@ -417,11 +430,11 @@ var doFilter = function (tracer, err, serverId, msg, opts, filters, index, opera
         cb(tracer, err, serverId, msg, opts);
         return;
     }
-    var self = this;
-    var filter = filters[index];
+    let self = this;
+    let filter: {[key: string]: Function} = filters[index];
     if (typeof filter === 'function')
     {
-        filter(serverId, msg, opts, function (target, message, options)
+        filter(serverId, msg, opts, function (target: any, message: object, options: object)
         {
             index++;
             //compatible for pomelo filter next(err) method
@@ -437,7 +450,7 @@ var doFilter = function (tracer, err, serverId, msg, opts, filters, index, opera
     }
     if (typeof filter[operate] === 'function')
     {
-        filter[operate](serverId, msg, opts, function (target, message, options)
+        filter[operate](serverId, msg, opts, function (target: Error&string, message:object, options:any)
         {
             index++;
             if (utils.getObjectClass(target) === 'Error')
@@ -454,11 +467,11 @@ var doFilter = function (tracer, err, serverId, msg, opts, filters, index, opera
     doFilter(tracer, err, serverId, msg, opts, filters, index, operate, cb);
 };
 
-var lazyConnect = function (tracer, station, serverId, factory, cb)
+let lazyConnect = function (tracer: Tracer, station: {[key:string]: any}, serverId: string, factory: any, cb: Function)
 {
     tracer && tracer.info('client', __filename, 'lazyConnect', 'create mailbox and try to connect to remote server');
-    var server = station.servers[serverId];
-    var online = station.onlines[serverId];
+    let server = station.servers[serverId];
+    let online = station.onlines[serverId];
     if (!server)
     {
         logger.error('[pinus-rpc] unknown server: %s', serverId);
@@ -469,17 +482,17 @@ var lazyConnect = function (tracer, station, serverId, factory, cb)
         logger.error('[pinus-rpc] server is not online: %s', serverId);
         return false;
     }
-    var mailbox = factory.create(server, station.opts);
+    let mailbox = factory.create(server, station.opts);
     station.connecting[serverId] = true;
     station.mailboxes[serverId] = mailbox;
     station.connect(tracer, serverId, cb);
     return true;
 };
 
-var addToPending = function (tracer, station, serverId, args)
+let addToPending = function (tracer: Tracer, station: {[key:string]: any}, serverId: string, args: IArguments)
 {
     tracer && tracer.info('client', __filename, 'addToPending', 'add pending requests to pending queue');
-    var pending = station.pendings[serverId];
+    let pending = station.pendings[serverId];
     if (!pending)
     {
         pending = station.pendings[serverId] = [];
@@ -493,11 +506,11 @@ var addToPending = function (tracer, station, serverId, args)
     pending.push(args);
 };
 
-var flushPending = function (tracer, station, serverId, cb?: Function)
+let flushPending = function (tracer: Tracer, station: {[key:string]: any}, serverId: string, cb?: Function)
 {
     tracer && tracer.info('client', __filename, 'flushPending', 'flush pending requests to dispatch method');
-    var pending = station.pendings[serverId];
-    var mailbox = station.mailboxes[serverId];
+    let pending = station.pendings[serverId];
+    let mailbox = station.mailboxes[serverId];
     if (!pending || !pending.length)
     {
         return;
@@ -507,14 +520,14 @@ var flushPending = function (tracer, station, serverId, cb?: Function)
         tracer && tracer.error('client', __filename, 'flushPending', 'fail to flush pending messages for empty mailbox: ' + serverId);
         logger.error('[pinus-rpc] fail to flush pending messages for empty mailbox: ' + serverId);
     }
-    for (var i = 0, l = pending.length; i < l; i++)
+    for (let i = 0, l = pending.length; i < l; i++)
     {
         station.dispatch.apply(station, pending[i]);
     }
     delete station.pendings[serverId];
 };
 
-var errorHandler = function (tracer, station, err, serverId, msg, opts, flag, cb)
+let errorHandler = function (tracer: Tracer, station: {[key:string]: any}, err: Error, serverId: string, msg: object, opts: object, flag: boolean, cb: Function)
 {
     if (!!station.handleError)
     {
@@ -534,7 +547,7 @@ var errorHandler = function (tracer, station, err, serverId, msg, opts, flag, cb
  *           opts.mailboxFactory {Function} mailbox factory function
  * @return {Object}      mail station instance
  */
-export function create(opts)
+export function create(opts: {servers: {serverType: Array<ServerInfo>}, mailboxFactory: Function})
 {
-    return new MailStation(opts || {});
+    return new MailStation(opts || <any>{});
 };

@@ -4,3 +4,7 @@ coverage.html
 lib-cov/
 coverage.html
 dist/
+/.vs/
+/.idea/
+/package-lock.json
+/.vscode/

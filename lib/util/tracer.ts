@@ -1,12 +1,12 @@
 import * as uuid from 'uuid';
 import { Logger } from 'log4js';
 
-var getModule = function (module : string)
+let getModule = function (module : string)
 {
-    var rs = '';
-    var strs = module.split('/');
-    var lines = strs.slice(-3);
-    for (var i = 0; i < lines.length; i++)
+    let rs = '';
+    let strs = module.split('/');
+    let lines = strs.slice(-3);
+    for (let i = 0; i < lines.length; i++)
     {
         rs += '/' + lines[i];
     }
@@ -14,15 +14,15 @@ var getModule = function (module : string)
 };
 export class Tracer
 {
-    private isEnabled: boolean;
-    private logger: any;
-    private source: string;
-    private remote: string;
-    private id: string;
-    private seq: number;
-    private msg: string;
+    public isEnabled: boolean;
+    public logger: any;
+    public source: string;
+    public remote: string;
+    public id: string;
+    public seq: number;
+    public msg: string | object;
 
-    constructor(logger : Logger, enabledRpcLog : boolean, source : string, remote : string, msg : string, id ?: string, seq ?: number)
+    constructor(logger : Logger, enabledRpcLog : boolean, source : string, remote : string, msg : string | object, id ?: string, seq ?: number)
     {
         this.isEnabled = enabledRpcLog;
         if (!enabledRpcLog)

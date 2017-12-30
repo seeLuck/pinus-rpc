@@ -1,6 +1,6 @@
 import { getLogger } from 'pinus-logger'
 import { listEs6ClassMethods } from './utils';
-var logger = getLogger('pinus-rpc', 'rpc-proxy');
+let logger = getLogger('pinus-rpc', 'rpc-proxy');
 
 /**
  * Create proxy.
@@ -29,12 +29,12 @@ export function create(opts : {origin : any , proxyCB : Function , service : str
     return genObjectProxy(opts.service, opts.origin, opts.attach, opts.proxyCB);
 };
 
-var genObjectProxy = function (serviceName : string, origin : any, attach : Object, proxyCB : Function)
+let genObjectProxy = function (serviceName : string, origin : any, attach : Object, proxyCB : Function)
 {
     //generate proxy for function field
-    var res : {[key:string] : Function} = {};
-    var proto = listEs6ClassMethods(origin);
-    for (var field of proto)
+    let res : {[key:string] : Function} = {};
+    let proto = listEs6ClassMethods(origin);
+    for (let field of proto)
     {
         res[field] = genFunctionProxy(serviceName, field, origin, attach, proxyCB);
     }
@@ -53,29 +53,29 @@ var genObjectProxy = function (serviceName : string, origin : any, attach : Obje
  * @param proxyCB {Functoin} proxy callback function
  * @returns function proxy
  */
-var genFunctionProxy = function (serviceName : string, methodName : string, origin : any, attach : Object, proxyCB : Function)
+let genFunctionProxy = function (serviceName : string, methodName : string, origin : any, attach : Object, proxyCB : Function)
 {
     return (function ()
     {
-        var proxy : any = function ()
+        let proxy : any = function ()
         {
-            // var args = arguments;
-            var len = arguments.length;
-            var args = new Array(len);
-            for (var i = 0; i < len; i++)
+            // let args = arguments;
+            let len = arguments.length;
+            let args = new Array(len);
+            for (let i = 0; i < len; i++)
             {
                 args[i] = arguments[i];
             }
-            // var args = Array.prototype.slice.call(arguments, 0);
+            // let args = Array.prototype.slice.call(arguments, 0);
             return proxyCB(serviceName, methodName, args, attach);
         };
 
         proxy.toServer = function ()
         {
-            // var args = arguments;
-            var len = arguments.length;
-            var args = new Array(len);
-            for (var i = 0; i < len; i++)
+            // let args = arguments;
+            let len = arguments.length;
+            let args = new Array(len);
+            for (let i = 0; i < len; i++)
             {
                 args[i] = arguments[i];
             }

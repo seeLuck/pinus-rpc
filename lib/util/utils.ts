@@ -22,7 +22,7 @@ export function getObjectClass(obj : Object)
         return;
     }
 
-    var constructor = obj.constructor;
+    let constructor = obj.constructor;
     if (!constructor)
     {
         return;
@@ -33,13 +33,13 @@ export function getObjectClass(obj : Object)
         return constructor.name;
     }
 
-    var str = constructor.toString();
+    let str = constructor.toString();
     if (!str)
     {
         return;
     }
 
-    var arr = null;
+    let arr = null;
     if (str.charAt(0) == '[')
     {
         arr = str.match(/\[\w+\s*(\w+)\]/);
@@ -89,7 +89,7 @@ export function isType(type : any)
  * @return {Boolean} true|false
  * @api public
  */
-export var checkArray = Array.isArray || isType("Array");
+export let checkArray = Array.isArray || isType("Array");
 
 /**
  * Utils check number
@@ -98,7 +98,7 @@ export var checkArray = Array.isArray || isType("Array");
  * @return {Boolean} true|false
  * @api public
  */
-export var checkNumber = isType("Number");
+export let checkNumber = isType("Number");
 
 /**
  * Utils check function
@@ -107,7 +107,7 @@ export var checkNumber = isType("Number");
  * @return {Boolean}    true|false
  * @api public
  */
-export var checkFunction = isType("Function");
+export let checkFunction = isType("Function");
 /**
  * Utils check object
  *
@@ -115,7 +115,7 @@ export var checkFunction = isType("Function");
  * @return {Boolean}  true|false
  * @api public
  */
-export var checkObject = isType("Object");
+export let checkObject = isType("Object");
 
 /**
  * Utils check string
@@ -124,7 +124,7 @@ export var checkObject = isType("Object");
  * @return {Boolean}  true|false
  * @api public
  */
-export var checkString = isType("String");
+export let checkString = isType("String");
 
 /**
  * Utils check boolean
@@ -133,7 +133,7 @@ export var checkString = isType("String");
  * @return {Boolean}  true|false
  * @api public
  */
-export var checkBoolean = isType("Boolean");
+export let checkBoolean = isType("Boolean");
 
 /**
  * Utils check bean
@@ -142,14 +142,14 @@ export var checkBoolean = isType("Boolean");
  * @return {Boolean}  true|false
  * @api public
  */
-export var checkBean = function (obj : any)
+export let checkBean = function (obj : any)
 {
     return obj && obj['$id'] &&
         checkFunction(obj['writeFields']) &&
         checkFunction(obj['readFields']);
 }
 
-export var checkNull = function (obj : any)
+export let checkNull = function (obj : any)
 {
     return !isNotNull(obj);
 }
@@ -161,12 +161,12 @@ export var checkNull = function (obj : any)
  * @return {Array}   array
  * @api public
  */
-export var to_array = function (args : any[])
+export let to_array = function (args : any[])
 {
-    var len = args.length;
-    var arr = new Array(len);
+    let len = args.length;
+    let arr = new Array(len);
 
-    for (var i = 0; i < len; i++)
+    for (let i = 0; i < len; i++)
     {
         arr[i] = args[i];
     }
@@ -181,14 +181,14 @@ export var to_array = function (args : any[])
  * @return {Boolean}  true|false
  * @api public
  */
-export var isNotNull = function (value : any)
+export let isNotNull = function (value : any)
 {
     if (value !== null && typeof value !== 'undefined')
         return true;
     return false;
 }
 
-export var getType = function (object : any)
+export let getType = function (object : any)
 {
     if (object == null || typeof object === 'undefined')
     {
@@ -241,14 +241,14 @@ export var getType = function (object : any)
     }
 }
 
-export var typeArray = ['', 'null', 'buffer', 'array', 'string', 'object', 'bean', 'boolean', 'float', 'number'];
-export var typeMap : any = {};
-for (var i = 1; i <= typeArray.length; i++)
+export let typeArray = ['', 'null', 'buffer', 'array', 'string', 'object', 'bean', 'boolean', 'float', 'number'];
+export let typeMap : any = {};
+for (let i = 1; i <= typeArray.length; i++)
 {
     typeMap[typeArray[i]] = i;
 }
 
-export var getBearcat = function ()
+export let getBearcat = function ()
 {
     return require('bearcat');
 }
@@ -257,10 +257,10 @@ export var getBearcat = function ()
  * 列出ES6的一个Class实例上的所有方法，但不包括父类的
  * @param objInstance 
  */
-export function listEs6ClassMethods(objInstance: Object)
+export function listEs6ClassMethods(objInstance: {[key:string]:any})
 {
-    var names: string[] = [];
-    var methodNames = Object.getOwnPropertyNames(Object.getPrototypeOf(objInstance)).concat(Object.getOwnPropertyNames(objInstance));
+    let names: string[] = [];
+    let methodNames = Object.getOwnPropertyNames(Object.getPrototypeOf(objInstance)).concat(Object.getOwnPropertyNames(objInstance));
     for (let name of methodNames)
     {
         let method = objInstance[name];

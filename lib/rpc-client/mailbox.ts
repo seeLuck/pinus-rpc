@@ -12,7 +12,7 @@ import * as Mailbox from './mailboxes/mqtt-mailbox';
  * @param {Object} opts construct parameters
  * @return {Object} mailbox instancef
  */
-export function create (serverInfo, opts)
+export function create (serverInfo: {id: string, host: string, port:number}, opts: Mailbox.MailBoxOpts)
 {
     // var mailbox = opts.mailbox || 'mqtt';
     // var Mailbox = null;

@@ -1,13 +1,31 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'mqtt-acceptor');
+let logger = getLogger('pinus-rpc', 'mqtt-acceptor');
 import { EventEmitter } from 'events';
 import { Tracer } from '../../util/tracer';
 import * as utils from '../../util/utils';
-import * as MqttCon from 'mqtt-connection';
+let MqttCon:any = require('mqtt-connection');
 import * as util from 'util';
 import * as net from 'net';
+import { Socket } from 'net';
 
-var curId = 1;
+export interface AcceptorPkg 
+{
+    source: string;
+    remote: string;
+    id: string & number;
+    seq: number;
+    msg: string;
+}
+
+export interface AcceptorOpts 
+{
+    interval: number, 
+    bufferMsg: any, 
+    rpcLogger: any, 
+    rpcDebugLog: any
+}
+
+let curId = 1;
 export class MQTTAcceptor extends EventEmitter
 {
     interval: number; // flush interval in ms
@@ -17,12 +35,12 @@ export class MQTTAcceptor extends EventEmitter
     _interval: any; // interval object
     sockets: any;
     msgQueues: any
-    cb : (tracer : any, msg ?: any, cb ?: Function)=>void;
+    cb : (tracer : any, msg ?: any, cb ?: Function) => void;
     inited: boolean;
     server: net.Server;
     closed: boolean;
 
-    constructor(opts, cb : (tracer: any, msg ?: any, cb ?: Function)=>void)
+    constructor(opts: AcceptorOpts, cb : (tracer: Tracer, msg ?: any, cb ?: Function)=>void)
     {
         super();
         this.interval = opts.interval; // flush interval in ms
@@ -35,7 +53,7 @@ export class MQTTAcceptor extends EventEmitter
         this.cb = cb;
     };
 
-    listen(port)
+    listen(port: number|string)
     {
         //check status
         if (!!this.inited)
@@ -45,7 +63,7 @@ export class MQTTAcceptor extends EventEmitter
         }
         this.inited = true;
 
-        var self = this;
+        let self = this;
 
         this.server = new net.Server();
         this.server.listen(port);
@@ -58,18 +76,18 @@ export class MQTTAcceptor extends EventEmitter
 
         this.server.on('connection', function (stream)
         {
-            var socket = MqttCon(stream);
+            let socket = MqttCon(stream);
             socket['id'] = curId++;
 
-            socket.on('connect', function (pkg)
+            socket.on('connect', function (pkg: any)
             {
                 console.log('connected');
             });
 
-            socket.on('publish', function (pkg)
+            socket.on('publish', function (pkg: any)
             {
                 pkg = pkg.payload.toString();
-                var isArray = false;
+                let isArray = false;
                 try
                 {
                     pkg = JSON.parse(pkg);
@@ -111,7 +129,7 @@ export class MQTTAcceptor extends EventEmitter
 
             self.sockets[socket.id] = socket;
 
-            socket.on('disconnect', function (reason)
+            socket.on('disconnect', function (reason: Error)
             {
                 self.onSocketClose(socket);
             });
@@ -142,44 +160,44 @@ export class MQTTAcceptor extends EventEmitter
         this.emit('closed');
     };
 
-    onSocketClose(socket)
+    onSocketClose(socket: {[key: string]: any})
     {
         if (!socket['closed'])
         {
-            var id = socket.id;
+            let id = socket.id;
             socket['closed'] = true;
             delete this.sockets[id];
             delete this.msgQueues[id];
         }
     }
 
-    cloneError(origin)
+    cloneError(origin: {msg: string, stack: object})
     {
         // copy the stack infos for Error instance json result is empty
-        var res = {
+        let res = {
             msg: origin.msg,
             stack: origin.stack
         };
         return res;
     };
 
-    processMsg(socket, pkg)
+    processMsg(socket: object, pkg: AcceptorPkg)
     {
-        var tracer = null;
+        let tracer: Tracer = null;
         if (this.rpcDebugLog)
         {
-            tracer = new Tracer(this.rpcLogger, this.rpcDebugLog, pkg.remote, pkg.source, pkg.msg, pkg.traceId, pkg.seqId);
+            tracer = new Tracer(this.rpcLogger, this.rpcDebugLog, pkg.remote, pkg.source, pkg.msg, pkg.id, pkg.seq);
             tracer.info('server', __filename, 'processMsg', 'mqtt-acceptor receive message and try to process message');
         }
         this.cb(tracer, pkg.msg,  (... args: any[])=>
         {
-            var errorArg = args[0]; // first callback argument can be error object, the others are message
+            let errorArg = args[0]; // first callback argument can be error object, the others are message
             if (errorArg && errorArg instanceof Error)
             {
-                args[0] = this.cloneError(errorArg);
+                args[0] = this.cloneError(<any>errorArg);
             }
 
-            var resp;
+            let resp;
             if (tracer && tracer.isEnabled)
             {
                 resp = {
@@ -206,18 +224,18 @@ export class MQTTAcceptor extends EventEmitter
         });
     };
 
-    processMsgs(socket, pkgs)
+    processMsgs(socket: any, pkgs: Array<AcceptorPkg>)
     {
-        for (var i = 0, l = pkgs.length; i < l; i++)
+        for (let i = 0, l = pkgs.length; i < l; i++)
         {
             this.processMsg(socket, pkgs[i]);
         }
     };
 
-    enqueue(socket, msg)
+    enqueue(socket: any, msg: {[key: string]: any})
     {
-        var id = socket.id;
-        var queue = this.msgQueues[id];
+        let id = socket.id;
+        let queue = this.msgQueues[id];
         if (!queue)
         {
             queue = this.msgQueues[id] = [];
@@ -227,10 +245,10 @@ export class MQTTAcceptor extends EventEmitter
 
     flush()
     {
-        var sockets = this.sockets,
+        let sockets = this.sockets,
             queues = this.msgQueues,
             queue, socket;
-        for (var socketId in queues)
+        for (let socketId in queues)
         {
             socket = sockets[socketId];
             if (!socket)
@@ -249,7 +267,7 @@ export class MQTTAcceptor extends EventEmitter
         }
     };
 
-    doSend(socket, msg)
+    doSend(socket: any, msg: {[key: string]: any})
     {
         socket.publish({
             topic: 'rpc',
@@ -265,7 +283,7 @@ export class MQTTAcceptor extends EventEmitter
  * @param opts init params
  * @param cb(tracer, msg, cb) callback function that would be invoked when new message arrives
  */
-export function create(opts, cb)
+export function create(opts: AcceptorOpts, cb: (tracer: Tracer, msg?: any, cb?: Function) => void)
 {
-    return new MQTTAcceptor(opts || {}, cb);
+    return new MQTTAcceptor(opts || <any>{}, cb);
 };

@@ -1,10 +1,24 @@
 import * as defaultAcceptorFactory from './acceptor';
 import { EventEmitter } from 'events';
-import { Dispatcher } from './dispatcher';
+import { Dispatcher, MsgPkg } from './dispatcher';
 import * as Loader from 'pinus-loader';
 import * as utils from '../util/utils';
+import {Tracer} from '../util/tracer'
 import * as util from 'util';
 import * as fs from 'fs';
+
+export interface RpcServerOpts {
+    port: number|string,
+    paths: Array<RemoteServerCode>,
+    context: object,
+    services: object
+    acceptorFactory?: {create: (opts: RpcServerOpts, cb: Function) => any}
+}
+
+export interface RemoteServerCode {
+    namespace: string,
+    path: string
+}
 
 export class Gateway extends EventEmitter
 {
@@ -14,21 +28,21 @@ export class Gateway extends EventEmitter
     stoped = false;
     services: any;
     acceptor: any;
-    constructor(opts)
+    constructor(opts: RpcServerOpts)
     {
         super();
         this.opts = opts || {};
-        this.port = opts.port || 3050;
+        this.port = <number>opts.port || 3050;
         this.started = false;
         this.stoped = false;
-        var acceptorFactory = opts.acceptorFactory || defaultAcceptorFactory;
+        let acceptorFactory: any = opts.acceptorFactory || defaultAcceptorFactory;
         this.services = opts.services;
-        var dispatcher = new Dispatcher(this.services);
+        let dispatcher = new Dispatcher(this.services);
         if (!!this.opts.reloadRemotes)
         {
             this.watchServices(dispatcher);
         }
-        this.acceptor = acceptorFactory.create(opts, function (tracer, msg, cb)
+        this.acceptor = acceptorFactory.create(opts, function (tracer: Tracer, msg: MsgPkg, cb: Function)
         {
             dispatcher.route(tracer, msg, cb);
         });
@@ -56,7 +70,7 @@ export class Gateway extends EventEmitter
         }
         this.started = true;
 
-        var self = this;
+        let self = this;
         this.acceptor.on('error', self.emit.bind(self, 'error'));
         this.acceptor.on('closed', self.emit.bind(self, 'closed'));
         this.acceptor.listen(this.port);
@@ -65,23 +79,23 @@ export class Gateway extends EventEmitter
     
     watchServices(dispatcher : Dispatcher)
     {
-        var paths = this.opts.paths;
-        var app = this.opts.context;
-        for (var i = 0; i < paths.length; i++)
+        let paths = this.opts.paths;
+        let app = this.opts.context;
+        for (let i = 0; i < paths.length; i++)
         {
             (function (index)
             {
-                fs.watch(paths[index].path, function (event, name)
+                fs.watch(paths[index].path, function (event: string, name: string)
                 {
                     if (event === 'change')
                     {
-                        var res = {};
-                        var item = paths[index];
-                        var m = Loader.load(item.path, app);
+                        let res: {[key: string]: any} = {};
+                        let item = paths[index];
+                        let m: {[key:string]: any} = Loader.load(item.path, app);
                         if (m)
                         {
                             createNamespace(item.namespace, res);
-                            for (var s in m)
+                            for (let s in m)
                             {
                                 res[item.namespace][s] = m[s];
                             }
@@ -98,7 +112,7 @@ export class Gateway extends EventEmitter
  *
  * @param opts {services: {rpcServices}, connector:conFactory(optional), router:routeFunction(optional)}
  */
-export function create(opts)
+export function create(opts: RpcServerOpts)
 {
     if (!opts || !opts.services)
     {
@@ -109,7 +123,7 @@ export function create(opts)
 };
 
 
-var createNamespace = function (namespace, proxies)
+let createNamespace = function (namespace: string, proxies: {[key: string]: object})
 {
     proxies[namespace] = proxies[namespace] || {};
 };

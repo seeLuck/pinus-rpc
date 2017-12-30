@@ -1,11 +1,19 @@
 import { EventEmitter } from 'events';
 import * as utils from '../util/utils';
 import * as util from 'util';
+import {Tracer} from '../util/tracer'
+
+export interface MsgPkg{
+    namespace: string,
+    method: string,
+    args: any,
+    service: string
+}
 
 export class Dispatcher extends EventEmitter
 {
     services: { [key: string]: { [key: string]: { [key: string]: Function } } };
-    constructor(services)
+    constructor(services: { [key: string]: { [key: string]: { [key: string]: Function } } })
     {
         super();
         var self = this;
@@ -24,7 +32,7 @@ export class Dispatcher extends EventEmitter
      * @param services services object collection, such as {service1: serviceObj1, service2: serviceObj2}
      * @param cb(...) callback function that should be invoked as soon as the rpc finished
      */
-    route(tracer, msg, cb)
+    route(tracer: Tracer, msg: MsgPkg, cb: Function)
     {
         tracer && tracer.info('server', __filename, 'route', 'route messsage to appropriate service object');
         var namespace = this.services[msg.namespace];
@@ -59,10 +67,10 @@ export class Dispatcher extends EventEmitter
             cb(new Error('not async method:' + msg.method));
             return;
         }
-        promise.then(function (value)
+        promise.then(function (value: string)
         {
             cb(null, value);
-        }, function (reason)
+        }, function (reason: Error)
             {
                 cb(reason);
             });
