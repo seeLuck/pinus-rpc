@@ -1,18 +1,36 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'mqtt-mailbox');
+let logger = getLogger('pinus-rpc', 'mqtt-mailbox');
 import { EventEmitter } from 'events';
 import { constants } from '../../util/constants';
 import { Tracer } from '../../util/tracer';
-import * as MqttCon from 'mqtt-connection';
+let MqttCon:any = require('mqtt-connection');
 import * as utils from '../../util/utils';
 import * as util from 'util';
 import * as net from 'net';
 
-var CONNECT_TIMEOUT = 2000;
+export interface MailBoxPkg 
+{
+    id: string & number;
+    resp: string;
+    source: string;
+    seq: number;
+}
+
+export interface MailBoxOpts 
+{
+    bufferMsg: any,
+    keepalive: number,
+    interval: number,
+    timeout: number,
+    context: any
+}
+
+let CONNECT_TIMEOUT = 2000;
+
 export class MailBox extends EventEmitter
 {
 
-    constructor(server, opts)
+    constructor(server: {id: string, host: string, port:number}, opts: MailBoxOpts)
     {
         super();
         this.id = server.id;
@@ -34,14 +52,14 @@ export class MailBox extends EventEmitter
     id: string;
     host: string;
     port: number;
-    requests = {};
-    timeout = {};
-    queue = [];
+    requests: {[id:number]: any} = {};
+    timeout: {[id:number]: any} = {};
+    queue: any = [];
     bufferMsg: any;
     keepalive: number;
     interval: number;
     timeoutValue: any;
-    keepaliveTimer = null;
+    keepaliveTimer: any = null;
     lastPing = -1;
     lastPong = -1;
     connected = false;
@@ -51,7 +69,7 @@ export class MailBox extends EventEmitter
     socket: any;
     _interval: NodeJS.Timer;
 
-    connect(tracer, cb)
+    connect(tracer: Tracer, cb: Function)
     {
         tracer && tracer.info('client', __filename, 'connect', 'mqtt-mailbox try to connect');
         if (this.connected)
@@ -60,12 +78,12 @@ export class MailBox extends EventEmitter
             return cb(new Error('mailbox has already connected.'));
         }
 
-        var self = this;
+        let self = this;
 
-        var stream = net.createConnection(this.port, this.host);
+        let stream = net.createConnection(this.port, this.host);
         this.socket = MqttCon(stream);
 
-        var connectTimeout = setTimeout( ()=>
+        let connectTimeout = setTimeout( ()=>
         {
             logger.error('rpc client %s connect to remote server %s timeout', self.serverId, self.id);
             self.emit('close', self.id);
@@ -94,7 +112,7 @@ export class MailBox extends EventEmitter
                 cb();
             });
 
-        this.socket.on('publish',  (pkg)=>
+        this.socket.on('publish', (pkg: any)=>
         {
             pkg = pkg.payload.toString();
             try
@@ -113,7 +131,7 @@ export class MailBox extends EventEmitter
             }
         });
 
-        this.socket.on('error', function (err)
+        this.socket.on('error', function (err: Error)
         {
             logger.error('rpc socket %s is error, remote server %s host: %s, port: %s', self.serverId, self.id, self.host, self.port);
             self.emit('close', self.id);
@@ -124,13 +142,13 @@ export class MailBox extends EventEmitter
             self.lastPong = Date.now();
         });
 
-        this.socket.on('disconnect', function (reason)
+        this.socket.on('disconnect', function (reason: Error)
         {
             logger.error('rpc socket %s is disconnect from remote server %s, reason: %s', self.serverId, self.id, reason);
-            var reqs = self.requests;
-            for (var id in reqs)
+            let reqs: {[id: number]: any} = self.requests;
+            for (let id in reqs)
             {
-                var ReqCb = reqs[id];
+                let ReqCb = reqs[id];
                 ReqCb(tracer, new Error(self.serverId + ' disconnect with remote server ' + self.id));
             }
             self.emit('close', self.id);
@@ -163,7 +181,7 @@ export class MailBox extends EventEmitter
     * @param opts {} attach info to send method
     * @param cb declaration decided by remote interface
     */
-    send(tracer, msg, opts, cb)
+    send(tracer: Tracer, msg: {service: string, method: string, args: any[]}, opts: any, cb: Function)
     {
         tracer && tracer.info('client', __filename, 'send', 'mqtt-mailbox try to send');
         if (!this.connected)
@@ -180,11 +198,11 @@ export class MailBox extends EventEmitter
             return;
         }
 
-        var id = this.curId++;
+        let id = this.curId++;
         this.requests[id] = cb;
         this.setCbTimeout( id, tracer, cb);
 
-        var pkg;
+        let pkg;
         if (tracer && tracer.isEnabled)
         {
             pkg = {
@@ -213,7 +231,7 @@ export class MailBox extends EventEmitter
 
     setupKeepAlive()
     {
-        var self = this;
+        let self = this;
         this.keepaliveTimer = setInterval(function ()
         {
             self.checkKeepAlive();
@@ -228,8 +246,8 @@ export class MailBox extends EventEmitter
         }
 
         // console.log('checkKeepAlive lastPing %d lastPong %d ~~~', this.lastPing, this.lastPong);
-        var now = Date.now();
-        var KEEP_ALIVE_TIMEOUT = this.keepalive * 2;
+        let now = Date.now();
+        let KEEP_ALIVE_TIMEOUT = this.keepalive * 2;
         if (this.lastPing > 0)
         {
             if (this.lastPong < this.lastPing)
@@ -252,7 +270,7 @@ export class MailBox extends EventEmitter
             this.lastPing = Date.now();
         }
     }
-    enqueue(msg)
+    enqueue(msg: object)
     {
         this.queue.push(msg);
     };
@@ -267,7 +285,7 @@ export class MailBox extends EventEmitter
         this.queue = [];
     };
 
-    doSend(socket, msg)
+    doSend(socket: any, msg: object)
     {
         socket.publish({
             topic: 'rpc',
@@ -275,40 +293,40 @@ export class MailBox extends EventEmitter
         });
     }
 
-    processMsgs(pkgs)
+    processMsgs(pkgs: Array<MailBoxPkg>)
     {
-        for (var i = 0, l = pkgs.length; i < l; i++)
+        for (let i = 0, l = pkgs.length; i < l; i++)
         {
             this.processMsg(pkgs[i]);
         }
     };
 
-    processMsg(pkg)
+    processMsg(pkg: MailBoxPkg)
     {
-        var pkgId = pkg.id;
+        let pkgId = pkg.id;
         this.clearCbTimeout(pkgId);
-        var cb = this.requests[pkgId];
+        let cb = this.requests[pkgId];
         if (!cb)
         {
             return;
         }
 
         delete this.requests[pkgId];
-        var rpcDebugLog = this.opts.rpcDebugLog;
-        var tracer = null;
-        var sendErr = null;
+        let rpcDebugLog = this.opts.rpcDebugLog;
+        let tracer = null;
+        let sendErr = null;
         if (rpcDebugLog)
         {
-            tracer = new Tracer(this.opts.rpcLogger, this.opts.rpcDebugLog, this.opts.clientId, pkg.source, pkg.resp, pkg.traceId, pkg.seqId);
+            tracer = new Tracer(this.opts.rpcLogger, this.opts.rpcDebugLog, this.opts.clientId, pkg.source, pkg.resp, pkg.id, pkg.seq);
         }
-        var pkgResp = pkg.resp;
+        let pkgResp = pkg.resp;
 
         cb(tracer, sendErr, pkgResp);
     };
 
-    setCbTimeout(id, tracer, cb)
+    setCbTimeout(id: number, tracer: any, cb: Function)
     {
-        var timer = setTimeout( ()=>
+        let timer = setTimeout( ()=>
         {
             // logger.warn('rpc request is timeout, id: %s, host: %s, port: %s', id, this.host, this.port);
             this.clearCbTimeout(id);
@@ -316,14 +334,14 @@ export class MailBox extends EventEmitter
             {
                 delete this.requests[id];
             }
-            var eMsg = util.format('rpc %s callback timeout %d, remote server %s host: %s, port: %s', this.serverId, this.timeoutValue, id, this.host, this.port);
+            let eMsg = util.format('rpc %s callback timeout %d, remote server %s host: %s, port: %s', this.serverId, this.timeoutValue, id, this.host, this.port);
             logger.error(eMsg);
             cb(tracer, new Error(eMsg));
         }, this.timeoutValue);
         this.timeout[id] = timer;
     };
 
-    clearCbTimeout(id)
+    clearCbTimeout(id: number)
     {
         if (!this.timeout[id])
         {
@@ -343,7 +361,7 @@ export class MailBox extends EventEmitter
 *                      opts.bufferMsg {Boolean} msg should be buffered or send immediately.
 *                      opts.interval {Boolean} msg queue flush interval if bufferMsg is true. default is 50 ms
 */
-export function create(server, opts)
+export function create(server: {id: string, host: string, port:number}, opts: MailBoxOpts)
 {
-    return new MailBox(server, opts || {});
+    return new MailBox(server, opts || <any>{});
 };

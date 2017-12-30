@@ -1,4 +1,4 @@
-export var constants = {
+export let constants = {
     FAIL_MODE: {
         FAILOVER: 'failover',
         FAILFAST: 'failfast',

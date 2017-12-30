@@ -1,7 +1,7 @@
 import { ConsistentHash } from '../util/consistentHash';
 import * as utils from '../util/utils';
 import * as crc from 'crc';
-
+import {RpcMsg, RpcClient} from './client'
 /**
  * Calculate route info and return an appropriate server id.
  *
@@ -10,16 +10,16 @@ import * as crc from 'crc';
  * @param context {Object} context of client
  * @param cb(err, serverId)
  */
-var defRoute = function (session, msg, context, cb)
+let defRoute = function (session:{[key:string]:any}, msg: RpcMsg, context: {[key:string]:any}, cb: (err:Error, serverId?:string)=>void)
 {
-    var list = context.getServersByType(msg.serverType);
+    let list = context.getServersByType(msg.serverType);
     if (!list || !list.length)
     {
         cb(new Error('can not find server info for type:' + msg.serverType));
         return;
     }
-    var uid = session ? (session.uid || '') : '';
-    var index = Math.abs(crc.crc32(uid.toString())) % list.length;
+    let uid = session ? (session.uid || '') : '';
+    let index = Math.abs(crc.crc32(uid.toString())) % list.length;
     cb(null, list[index].id);
 };
 
@@ -31,15 +31,15 @@ var defRoute = function (session, msg, context, cb)
  * @param msg {Object} rpc message.
  * @param cb {Function} cb(err, serverId).
  */
-var rdRoute = function (client, serverType, msg, cb)
+let rdRoute = function (client: RpcClient, serverType: string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
 {
-    var servers = client._station.serversMap[serverType];
+    let servers = client._station.serversMap[serverType];
     if (!servers || !servers.length)
     {
         cb(new Error('rpc servers not exist with serverType: ' + serverType));
         return;
     }
-    var index = Math.floor(Math.random() * servers.length);
+    let index = Math.floor(Math.random() * servers.length);
     cb(null, servers[index]);
 };
 
@@ -51,15 +51,15 @@ var rdRoute = function (client, serverType, msg, cb)
  * @param msg {Object} rpc message.
  * @param cb {Function} cb(err, serverId).
  */
-var rrRoute = function (client, serverType, msg, cb)
+let rrRoute = function (client: RpcClient & {rrParam: any}, serverType: string, msg: RpcMsg, cb:(err:Error, serverId?:string)=>void)
 {
-    var servers = client._station.serversMap[serverType];
+    let servers = client._station.serversMap[serverType];
     if (!servers || !servers.length)
     {
         cb(new Error('rpc servers not exist with serverType: ' + serverType));
         return;
     }
-    var index;
+    let index;
     if (!client.rrParam)
     {
         client.rrParam = {};
@@ -87,15 +87,15 @@ var rrRoute = function (client, serverType, msg, cb)
  * @param msg {Object} rpc message.
  * @param cb {Function} cb(err, serverId).
  */
-var wrrRoute = function (client, serverType, msg, cb)
+let wrrRoute = function (client:RpcClient & {wrrParam: any}, serverType:string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
 {
-    var servers = client._station.serversMap[serverType];
+    let servers = client._station.serversMap[serverType];
     if (!servers || !servers.length)
     {
         cb(new Error('rpc servers not exist with serverType: ' + serverType));
         return;
     }
-    var index, weight;
+    let index, weight;
     if (!client.wrrParam)
     {
         client.wrrParam = {};
@@ -109,12 +109,12 @@ var wrrRoute = function (client, serverType, msg, cb)
         index = -1;
         weight = 0;
     }
-    var getMaxWeight = function ()
+    let getMaxWeight = function ()
     {
-        var maxWeight = -1;
-        for (var i = 0; i < servers.length; i++)
+        let maxWeight = -1;
+        for (let i = 0; i < servers.length; i++)
         {
-            var server = client._station.servers[servers[i]];
+            let server = client._station.servers[servers[i]];
             if (!!server.weight && server.weight > maxWeight)
             {
                 maxWeight = server.weight;
@@ -138,7 +138,7 @@ var wrrRoute = function (client, serverType, msg, cb)
                 }
             }
         }
-        var server = client._station.servers[servers[index]];
+        let server = client._station.servers[servers[index]];
         if (server.weight >= weight)
         {
             client.wrrParam[serverType] = {
@@ -158,24 +158,25 @@ var wrrRoute = function (client, serverType, msg, cb)
  * @param serverType {String} rpc target serverType.
  * @param msg {Object} rpc message.
  * @param cb {Function} cb(err, serverId).
- */
-var laRoute = function (client, serverType, msg, cb)
+*/
+
+let laRoute = function (client:RpcClient & {laParam: any}, serverType:string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
 {
-    var servers = client._station.serversMap[serverType];
+    let servers = client._station.serversMap[serverType];
     if (!servers || !servers.length)
     {
         return cb(new Error('rpc servers not exist with serverType: ' + serverType));
     }
-    var actives = [];
+    let actives = [];
     if (!client.laParam)
     {
         client.laParam = {};
     }
     if (!!client.laParam[serverType])
     {
-        for (var j = 0; j < servers.length; j++)
+        for (let j = 0; j < servers.length; j++)
         {
-            var count = client.laParam[serverType][servers[j]];
+            let count = client.laParam[serverType][servers[j]];
             if (!count)
             {
                 client.laParam[servers[j]] = count = 0;
@@ -185,15 +186,15 @@ var laRoute = function (client, serverType, msg, cb)
     } else
     {
         client.laParam[serverType] = {};
-        for (var i = 0; i < servers.length; i++)
+        for (let i = 0; i < servers.length; i++)
         {
             client.laParam[serverType][servers[i]] = 0;
             actives.push(0);
         }
     }
-    var rs = [];
-    var minInvoke = Number.MAX_VALUE;
-    for (var k = 0; k < actives.length; k++)
+    let rs = [];
+    let minInvoke = Number.MAX_VALUE;
+    for (let k = 0; k < actives.length; k++)
     {
         if (actives[k] < minInvoke)
         {
@@ -205,8 +206,8 @@ var laRoute = function (client, serverType, msg, cb)
             rs.push(servers[k]);
         }
     }
-    var index = Math.floor(Math.random() * rs.length);
-    var serverId = rs[index];
+    let index = Math.floor(Math.random() * rs.length);
+    let serverId = rs[index];
     client.laParam[serverType][serverId] += 1;
     cb(null, serverId);
 };
@@ -219,15 +220,15 @@ var laRoute = function (client, serverType, msg, cb)
  * @param msg {Object} rpc message.
  * @param cb {Function} cb(err, serverId).
  */
-var chRoute = function (client, serverType, msg, cb)
+let chRoute = function (client:RpcClient & {chParam: any}, serverType:string, msg:RpcMsg, cb:(err:Error, serverId?:string)=>void)
 {
-    var servers = client._station.serversMap[serverType];
+    let servers = client._station.serversMap[serverType];
     if (!servers || !servers.length)
     {
         return cb(new Error('rpc servers not exist with serverType: ' + serverType));
     }
 
-    var index, con;
+    let index, con;
     if (!client.chParam)
     {
         client.chParam = {};
@@ -240,17 +241,17 @@ var chRoute = function (client, serverType, msg, cb)
         client.opts.station = client._station;
         con = new ConsistentHash(servers, client.opts);
     }
-    var hashFieldIndex = client.opts.hashFieldIndex;
-    var field = msg.args[hashFieldIndex] || JSON.stringify(msg);
+    let hashFieldIndex = client.opts.hashFieldIndex;
+    let field = msg.args[hashFieldIndex] || JSON.stringify(msg);
     cb(null, con.getNode(field));
     client.chParam[serverType] = {
         consistentHash: con
     };
 };
 
-export var rr = rrRoute
-export var wrr = wrrRoute
-export var la = laRoute
-export var ch = chRoute
-export var rd = rdRoute
-export var df = defRoute
+export let rr = rrRoute
+export let wrr = wrrRoute
+export let la = laRoute
+export let ch = chRoute
+export let rd = rdRoute
+export let df = defRoute

@@ -1,5 +1,5 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'rpc-client');
+let logger = getLogger('pinus-rpc', 'rpc-client');
 import { failureProcess } from './failureProcess';
 import { constants } from '../util/constants';
 import * as Station from './mailstation';
@@ -9,14 +9,35 @@ import * as utils from '../util/utils';
 import * as Proxy from '../util/proxy';
 import * as router from './router';
 import * as async from 'async';
-
+import {ServerInfo} from './mailstation'
+import { ErrorCallback } from 'async';
 /**
  * Client states
  */
-var STATE_INITED = 1; // client has inited
-var STATE_STARTED = 2; // client has started
-var STATE_CLOSED = 3; // client has closed
+let STATE_INITED = 1; // client has inited
+let STATE_STARTED = 2; // client has started
+let STATE_CLOSED = 3; // client has closed
 
+export interface RpcClientOpts 
+{
+    context: string,
+    routeContext: any,
+    router: any,
+    routerType: string,
+    rpcDebugLog: string,
+    clientId: string,
+    servers: {serverType: Array<ServerInfo>}, 
+    mailboxFactory: Function
+}
+
+export interface RpcMsg 
+{ 
+    namespace: any; 
+    serverType: any;
+    service: string; 
+    method: string; 
+    args: any[]
+}
 /**
  * RPC Client Class
  */
@@ -32,9 +53,9 @@ export class RpcClient
     _station: any;
     state: number;
 
-    constructor(opts)
+    constructor(opts: RpcClientOpts)
     {
-        opts = opts || {};
+        opts = opts || <any>{};
         this._context = opts.context;
         this._routeContext = opts.routeContext;
         this.router = opts.router || router.df;
@@ -56,7 +77,7 @@ export class RpcClient
      *
      * @param cb {Function} cb(err)
      */
-    start(cb)
+    start(cb: Function)
     {
         if (this.state > STATE_INITED)
         {
@@ -64,8 +85,8 @@ export class RpcClient
             return;
         }
 
-        var self = this;
-        this._station.start(function (err)
+        let self = this;
+        this._station.start(function (err: Error)
         {
             if (err)
             {
@@ -84,7 +105,7 @@ export class RpcClient
      * @param  {Boolean} force
      * @return {Void}
      */
-    stop(force)
+    stop(force: boolean)
     {
         if (this.state !== STATE_STARTED)
         {
@@ -102,13 +123,13 @@ export class RpcClient
      * @param {Object} record proxy description record, format:
      *                        {namespace, serverType, path}
      */
-    addProxy(record)
+    addProxy(record: {namespace: string, serverType: string, path: string})
     {
         if (!record)
         {
             return;
         }
-        var proxy = generateProxy(this, record, this._context);
+        let proxy = generateProxy(this, record, this._context);
         if (!proxy)
         {
             return;
@@ -121,13 +142,13 @@ export class RpcClient
      *
      * @param {Array} records list of proxy description record
      */
-    addProxies(records)
+    addProxies(records: {namespace: string, serverType: string, path: string}[])
     {
         if (!records || !records.length)
         {
             return;
         }
-        for (var i = 0, l = records.length; i < l; i++)
+        for (let i = 0, l = records.length; i < l; i++)
         {
             this.addProxy(records[i]);
         }
@@ -138,7 +159,7 @@ export class RpcClient
      *
      * @param {Object} server new server information
      */
-    addServer(server)
+    addServer(server: {namespace: string, serverType: string, path: string})
     {
         this._station.addServer(server);
     };
@@ -148,7 +169,7 @@ export class RpcClient
      *
      * @param {Array} servers server info list
      */
-    addServers(servers)
+    addServers(servers: {namespace: string, serverType: string, path: string}[])
     {
         this._station.addServers(servers);
     };
@@ -158,7 +179,7 @@ export class RpcClient
      *
      * @param  {String|Number} id server id
      */
-    removeServer(id)
+    removeServer(id: string|number)
     {
         this._station.removeServer(id);
     };
@@ -168,7 +189,7 @@ export class RpcClient
      *
      * @param  {Array} ids remote server id list
      */
-    removeServers(ids)
+    removeServers(ids: Array<string|number>)
     {
         this._station.removeServers(ids);
     };
@@ -178,7 +199,7 @@ export class RpcClient
      *
      * @param {Array} servers server info list
      */
-    replaceServers(servers)
+    replaceServers(servers: {namespace: string, serverType: string, path: string}[])
     {
         this._station.replaceServers(servers);
     };
@@ -191,10 +212,10 @@ export class RpcClient
      *    {serverType: serverType, service: serviceName, method: methodName, args: arguments}
      * @param cb {Function} cb(err, ...)
      */
-    rpcInvoke(serverId, msg, cb)
+    rpcInvoke(serverId: string, msg: RpcMsg, cb: Function)
     {
-        var rpcDebugLog = this.rpcDebugLog;
-        var tracer = null;
+        let rpcDebugLog = this.rpcDebugLog;
+        let tracer = null;
 
         if (rpcDebugLog)
         {
@@ -219,7 +240,7 @@ export class RpcClient
      *
      * @api public
      */
-    before(filter)
+    before(filter: Function)
     {
         this._station.before(filter);
     };
@@ -231,7 +252,7 @@ export class RpcClient
      *
      * @api public
      */
-    after(filter)
+    after(filter: Function)
     {
         this._station.after(filter);
     };
@@ -243,7 +264,7 @@ export class RpcClient
      *
      * @api public
      */
-    filter(filter)
+    filter(filter: Function)
     {
         this._station.filter(filter);
     };
@@ -255,7 +276,7 @@ export class RpcClient
      *
      * @api public
      */
-    setErrorHandler(handler)
+    setErrorHandler(handler: Function)
     {
         this._station.handleError = handler;
     };
@@ -268,7 +289,7 @@ export class RpcClient
  *
  * @api private
  */
-var createStation = function (opts)
+let createStation = function (opts: RpcClientOpts)
 {
     return Station.create(opts);
 };
@@ -282,14 +303,14 @@ var createStation = function (opts)
  *
  * @api private
  */
-var generateProxy = function (client, record, context)
+let generateProxy = function (client: RpcClient, record: {namespace: string, serverType:string, path: string}, context: object)
 {
     if (!record)
     {
         return;
     }
-    var res, name;
-    var modules = Loader.load(record.path, context);
+    let res: {[key:string]: any}, name;
+    let modules: {[key:string]: any} = Loader.load(record.path, context);
     if (modules)
     {
         res = {};
@@ -318,7 +339,7 @@ var generateProxy = function (client, record, context)
  *
  * @api private
  */
-var proxyCB = function (client, serviceName, methodName, args, attach, isToSpecifiedServer)
+let proxyCB = function (client: RpcClient, serviceName: string, methodName: string, args: Array<any>, attach: {[key: string]: any}, isToSpecifiedServer: boolean)
 {
     if (client.state !== STATE_STARTED)
     {
@@ -333,9 +354,9 @@ var proxyCB = function (client, serviceName, methodName, args, attach, isToSpeci
         Promise.reject(new Error('[pinus-rpc] invalid rpc invoke, arguments length less than 2'));
         return;
     }
-    var routeParam = args.shift();
-    var serverType = attach.serverType;
-    var msg = {
+    let routeParam = args.shift();
+    let serverType = attach.serverType;
+    let msg = {
         namespace: attach.namespace,
         serverType: serverType,
         service: serviceName,
@@ -351,14 +372,14 @@ var proxyCB = function (client, serviceName, methodName, args, attach, isToSpeci
         }
         else
         {
-            getRouteTarget(client, serverType, msg, routeParam, function (err, serverId)
+            getRouteTarget(client, serverType, msg, routeParam, function (err: Error, serverId: string)
             {
                 if (err)
                 {
                     return resolve(err);
                 }
 
-                client.rpcInvoke(serverId, msg, function (err, resp)
+                client.rpcInvoke(serverId, msg, function (err: Error, resp: string)
                 {
                     if (err != null)
                     {
@@ -384,11 +405,11 @@ var proxyCB = function (client, serviceName, methodName, args, attach, isToSpeci
  *
  * @api private
  */
-var getRouteTarget = function (client, serverType, msg, routeParam, cb)
+let getRouteTarget = function (client: RpcClient, serverType: string, msg: RpcMsg, routeParam: object, cb: Function)
 {
     if (!!client.routerType)
     {
-        var method;
+        let method;
         switch (client.routerType)
         {
             case constants.SCHEDULE.ROUNDROBIN:
@@ -407,13 +428,13 @@ var getRouteTarget = function (client, serverType, msg, routeParam, cb)
                 method = router.rd;
                 break;
         }
-        method.call(null, client, serverType, msg, function (err, serverId)
+        method.call(null, client, serverType, msg, function (err: Error, serverId: string)
         {
             cb(err, serverId);
         });
     } else
     {
-        var route, target;
+        let route, target;
         if (typeof client.router === 'function')
         {
             route = client.router;
@@ -427,7 +448,7 @@ var getRouteTarget = function (client, serverType, msg, routeParam, cb)
             logger.error('[pinus-rpc] invalid route function.');
             return;
         }
-        route.call(target, routeParam, msg, client._routeContext, function (err, serverId)
+        route.call(target, routeParam, msg, client._routeContext, function (err: Error, serverId: string)
         {
             cb(err, serverId);
         });
@@ -444,7 +465,7 @@ var getRouteTarget = function (client, serverType, msg, routeParam, cb)
  *
  * @api private
  */
-var rpcToSpecifiedServer = function (client, msg, serverType, serverId, cb)
+let rpcToSpecifiedServer = function (client: RpcClient, msg: RpcMsg, serverType: object, serverId: string, cb: ErrorCallback<{}>)
 {
     if (typeof serverId !== 'string')
     {
@@ -453,17 +474,17 @@ var rpcToSpecifiedServer = function (client, msg, serverType, serverId, cb)
     }
     if (serverId === '*')
     {
-        var servers = client._routeContext.getServersByType(serverType);
+        let servers = client._routeContext.getServersByType(serverType);
         if (!servers)
         {
             logger.error('[pinus-rpc] serverType %s servers not exist', serverType);
             return;
         }
 
-        async.each(servers, function (server, next)
+        async.each(servers, function (server: {[key: string]: string}, next)
         {
-            var serverId = server['id'];
-            client.rpcInvoke(serverId, msg, function (err)
+            let serverId = server['id'];
+            client.rpcInvoke(serverId, msg, function (err: Error)
             {
                 next(err);
             });
@@ -484,12 +505,12 @@ var rpcToSpecifiedServer = function (client, msg, serverType, serverId, cb)
  *
  * @api private
  */
-var insertProxy = function (proxies, namespace, serverType, proxy)
+let insertProxy = function (proxies: {[key: string]:any}, namespace: string, serverType: string, proxy: {[key: string]:any})
 {
     proxies[namespace] = proxies[namespace] || {};
     if (proxies[namespace][serverType])
     {
-        for (var attr in proxy)
+        for (let attr in proxy)
         {
             proxies[namespace][serverType][attr] = proxy[attr];
         }
@@ -508,7 +529,7 @@ var insertProxy = function (proxies, namespace, serverType, proxy)
  *                       opts.mailBoxFactory: (optional) mail box factory instance.
  * @return {Object}      client instance.
  */
-export function create(opts)
+export function create(opts: RpcClientOpts)
 {
     return new RpcClient(opts);
 };

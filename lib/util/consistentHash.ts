@@ -1,39 +1,43 @@
 import * as crypto from 'crypto';
 
+export interface Server {
+    id: number,
+    type: string
+}
 
-var getKeysLength = function (map)
+let getKeysLength = function<T>(map: {[key:string]: T})
 {
     return Object.keys(map).length;
 };
 
-var hash = function (algorithm, str)
+let hash = function (algorithm: string, str: string)
 {
     return crypto.createHash(algorithm).update(str).digest('hex');
 };
 
-var compare = function (v1, v2)
+let compare = function (v1: string, v2: string): number
 {
     return v1 > v2 ? 1 : v1 < v2 ? -1 : 0;
 };
 export class ConsistentHash
 {
 
-    ring = {};
-    keys = [];
-    nodes = [];
+    ring: {[key:string]: any} = {};
+    keys: {[key:string]: any} = [];
+    nodes: Array<Server> = [];
     opts: any;
     replicas: number;
     algorithm: string;
     station: any;
 
-    constructor(nodes, opts)
+    constructor(nodes: Array<Server>, opts: any)
     {
         this.opts = opts || {};
         this.replicas = this.opts.replicas || 100;
         this.algorithm = this.opts.algorithm || 'md5';
         this.station = this.opts.station;
 
-        for (var i = 0; i < nodes.length; i++)
+        for (let i = 0; i < nodes.length; i++)
         {
             this.addNode(nodes[i]);
         }
@@ -43,21 +47,21 @@ export class ConsistentHash
     };
 
 
-    addNode(node)
+    addNode(node: Server)
     {
         this.nodes.push(node);
-        for (var i = 0; i < this.replicas; i++)
+        for (let i = 0; i < this.replicas; i++)
         {
-            var key = hash(this.algorithm, (node.id || node) + ':' + i);
+            let key = hash(this.algorithm, (node.id || node) + ':' + i);
             this.keys.push(key);
             this.ring[key] = node;
         }
         this.keys.sort();
     };
 
-    removeNode(node)
+    removeNode(node: Server)
     {
-        for (var i = 0; i < this.nodes.length; i++)
+        for (let i = 0; i < this.nodes.length; i++)
         {
             if (this.nodes[i] === node)
             {
@@ -66,11 +70,11 @@ export class ConsistentHash
             }
         }
 
-        for (var j = 0; j < this.replicas; j++)
+        for (let j = 0; j < this.replicas; j++)
         {
-            var key = hash(this.algorithm, (node.id || node) + ':' + j);
+            let key = hash(this.algorithm, (node.id || node) + ':' + j);
             delete this.ring[key];
-            for (var k = 0; k < this.keys.length; k++)
+            for (let k = 0; k < this.keys.length; k++)
             {
                 if (this.keys[k] === key)
                 {
@@ -81,23 +85,23 @@ export class ConsistentHash
         }
     };
 
-    getNode(key)
+    getNode(key: string)
     {
         if (getKeysLength(this.ring) === 0)
         {
             return 0;
         }
-        var result = hash(this.algorithm, key);
-        var pos = this.getNodePosition(result);
+        let result = hash(this.algorithm, key);
+        let pos = this.getNodePosition(result);
         return this.ring[this.keys[pos]];
     };
 
-    getNodePosition(result)
+    getNodePosition(result: string)
     {
-        var upper = getKeysLength(this.ring) - 1;
-        var lower = 0;
-        var idx = 0;
-        var comp = 0;
+        let upper = getKeysLength(this.ring) - 1;
+        let lower = 0;
+        let idx = 0;
+        let comp = 0;
 
         if (upper === 0)
         {

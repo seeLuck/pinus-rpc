@@ -1,23 +1,29 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'Coder');
-// import * as OutBuffer from ('./buffer/outputBuffer');
-// import * as InBuffer from ('./buffer/inputBuffer');
-import * as bBuffer from 'bearcat-buffer';
-var OutBuffer = bBuffer.outBuffer;
-var InBuffer = bBuffer.inBuffer;
+let logger = getLogger('pinus-rpc', 'Coder');
+import * as OutBuffer from './buffer/outputBuffer';
+import * as InBuffer from './buffer/inputBuffer';
+// import * as bBuffer from 'bearcat-buffer';
+// let OutBuffer = bBuffer.outBuffer;
+// let InBuffer = bBuffer.inBuffer;
 
+export interface Msg {
+    namespace: string,
+    serverType: string,
+    service: string, 
+    method: string, 
+    args: Array<string>
+}
 
-
-export function encodeClient(id, msg, servicesMap)
+export function encodeClient(id: number, msg: Msg, servicesMap: {[key:number]: any})
 {
     // logger.debug('[encodeClient] id %s msg %j', id, msg);
-    var outBuf = new OutBuffer();
+    let outBuf = new OutBuffer.OutputBuffer();
     outBuf.writeUInt(id);
-    var namespace = msg['namespace'];
-    var serverType = msg['serverType'];
-    var service = msg['service'];
-    var method = msg['method'];
-    var args = msg['args'] || [];
+    let namespace = msg['namespace'];
+    let serverType = msg['serverType'];
+    let service = msg['service'];
+    let method = msg['method'];
+    let args = msg['args'] || [];
     outBuf.writeShort(servicesMap[0][namespace]);
     outBuf.writeShort(servicesMap[1][service]);
     outBuf.writeShort(servicesMap[2][method]);
@@ -30,27 +36,27 @@ export function encodeClient(id, msg, servicesMap)
     return outBuf.getBuffer();
 }
 
-export function encodeServer(id, args)
+export function encodeServer(id: number, args: object)
 {
     // logger.debug('[encodeServer] id %s args %j', id, args);
-    var outBuf = new OutBuffer();
+    let outBuf = new OutBuffer.OutputBuffer();
     outBuf.writeUInt(id);
     outBuf.writeObject(args);
     return outBuf.getBuffer();
 }
 
-export function decodeServer(buf, servicesMap)
+export function decodeServer(buf: Buffer, servicesMap: {[key:number]: any})
 {
-    var inBuf = new InBuffer(buf);
-    var id = inBuf.readUInt();
-    var namespace = servicesMap[3][inBuf.readShort()];
-    var service = servicesMap[4][inBuf.readShort()];
-    var method = servicesMap[5][inBuf.readShort()];
-    // var namespace = inBuf.readString();
-    // var service = inBuf.readString();
-    // var method = inBuf.readString();
+    let inBuf = new InBuffer.InputBuffer(buf);
+    let id = inBuf.readUInt();
+    let namespace = servicesMap[3][inBuf.readShort()];
+    let service = servicesMap[4][inBuf.readShort()];
+    let method = servicesMap[5][inBuf.readShort()];
+    // let namespace = inBuf.readString();
+    // let service = inBuf.readString();
+    // let method = inBuf.readString();
 
-    var args = inBuf.readObject();
+    let args = inBuf.readObject();
     // logger.debug('[decodeServer] namespace %s service %s method %s args %j', namespace, service, method, args)
 
     return {
@@ -65,11 +71,11 @@ export function decodeServer(buf, servicesMap)
     }
 }
 
-export function decodeClient(buf)
+export function decodeClient(buf: Buffer)
 {
-    var inBuf = new InBuffer(buf);
-    var id = inBuf.readUInt();
-    var resp = inBuf.readObject();
+    let inBuf = new InBuffer.InputBuffer(buf);
+    let id = inBuf.readUInt();
+    let resp = inBuf.readObject();
     // logger.debug('[decodeClient] id %s resp %j', id, resp);
     return {
         id: id,

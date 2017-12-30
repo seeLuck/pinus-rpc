@@ -1,5 +1,5 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'InputBuffer');
+let logger = getLogger('pinus-rpc', 'InputBuffer');
 import * as Utils from '../utils';
 
 export class InputBuffer
@@ -8,7 +8,7 @@ export class InputBuffer
 	pos: number;
 	count: number;
 
-	constructor(buffer)
+	constructor(buffer: Buffer)
 	{
 		this.buf = buffer;
 		this.pos = 0;
@@ -22,7 +22,7 @@ export class InputBuffer
 
 	readBoolean()
 	{
-		var r = this.read();
+		let r = this.read();
 		if (r < 0)
 		{
 			throw new Error('EOFException');
@@ -39,9 +39,9 @@ export class InputBuffer
 
 	readBytes()
 	{
-		var len = this.readInt();
+		let len = this.readInt();
 		this.check(len);
-		var r = this.buf.slice(this.pos, this.pos + len);
+		let r = this.buf.slice(this.pos, this.pos + len);
 		this.pos += len;
 		return r;
 	}
@@ -54,7 +54,7 @@ export class InputBuffer
 	readDouble()
 	{
 		this.check(8);
-		var r = this.buf.readDoubleLE(this.pos);
+		let r = this.buf.readDoubleLE(this.pos);
 		this.pos += 8;
 		return r;
 	}
@@ -62,7 +62,7 @@ export class InputBuffer
 	readFloat()
 	{
 		this.check(4);
-		var r = this.buf.readFloatLE(this.pos);
+		let r = this.buf.readFloatLE(this.pos);
 		this.pos += 4;
 		return r;
 	}
@@ -70,7 +70,7 @@ export class InputBuffer
 	readInt()
 	{
 		this.check(4);
-		var r = this.buf.readInt32LE(this.pos);
+		let r = this.buf.readInt32LE(this.pos);
 		this.pos += 4;
 		return r;
 	}
@@ -78,7 +78,7 @@ export class InputBuffer
 	readShort()
 	{
 		this.check(2);
-		var r = this.buf.readInt16LE(this.pos);
+		let r = this.buf.readInt16LE(this.pos);
 		this.pos += 2;
 		return r;
 	}
@@ -86,7 +86,7 @@ export class InputBuffer
 	readUInt()
 	{
 		this.check(4);
-		var r = this.buf.readUInt32LE(this.pos);
+		let r = this.buf.readUInt32LE(this.pos);
 		this.pos += 4;
 		return r;
 	}
@@ -94,26 +94,26 @@ export class InputBuffer
 	readUShort()
 	{
 		this.check(2);
-		var r = this.buf.readUInt16LE(this.pos);
+		let r = this.buf.readUInt16LE(this.pos);
 		this.pos += 2;
 		return r;
 	}
 
 	readString()
 	{
-		var len = this.readInt();
+		let len = this.readInt();
 		this.check(len);
-		var r = this.buf.toString('utf8', this.pos, this.pos + len);
+		let r = this.buf.toString('utf8', this.pos, this.pos + len);
 		this.pos += len;
 		return r;
 	}
 
-	readObject()
+	readObject(): string | object | Array<string|object>
 	{
-		var type = this.readShort();
-		var instance = null;
+		let type = this.readShort();
+		let instance = null;
 		// console.log('readObject %s', type)
-		var typeMap = Utils.typeMap;
+		let typeMap = Utils.typeMap;
 
 		if (typeMap['null'] == type)
 		{
@@ -124,8 +124,8 @@ export class InputBuffer
 		} else if (typeMap['array'] == type)
 		{
 			instance = [];
-			var len = this.readInt();
-			for (var i = 0; i < len; i++)
+			let len = this.readInt();
+			for (let i = 0; i < len; i++)
 			{
 				instance.push(this.readObject());
 			}
@@ -134,13 +134,13 @@ export class InputBuffer
 			instance = this.readString();
 		} else if (typeMap['object'] == type)
 		{
-			var objStr = this.readString();
+			let objStr = this.readString();
 			instance = JSON.parse(objStr);
 		} else if (typeMap['bean'] == type)
 		{
-			var id = this.readString();
-			var bearcat = Utils.getBearcat();
-			var bean = bearcat.getBean(id);
+			let id = this.readString();
+			let bearcat = Utils.getBearcat();
+			let bean = bearcat.getBean(id);
 			if (!bean)
 			{
 				logger.error('readBean bean not found %s', id);
@@ -165,7 +165,7 @@ export class InputBuffer
 		return instance;
 	}
 
-	check(len)
+	check(len: number)
 	{
 		if (this.pos + len > this.count)
 		{

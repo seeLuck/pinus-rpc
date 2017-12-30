@@ -1,14 +1,14 @@
 import { getLogger } from 'pinus-logger'
-var logger = getLogger('pinus-rpc', 'failprocess');
+let logger = getLogger('pinus-rpc', 'failprocess');
 import { constants } from '../util/constants';
 import * as utils from '../util/utils';
 
-export function failureProcess(code, tracer, serverId, msg, opts)
+export function failureProcess(this:any, code: string, tracer: any, serverId: string, msg: object, opts:{failMode: string})
 {
-    var cb = tracer && tracer.cb;
-    var mode = opts.failMode;
-    var FAIL_MODE = constants.FAIL_MODE;
-    var method = failfast;
+    let cb = tracer && tracer.cb;
+    let mode = opts.failMode;
+    let FAIL_MODE = constants.FAIL_MODE;
+    let method = failfast;
 
     if (mode == FAIL_MODE.FAILOVER)
     {
@@ -50,13 +50,13 @@ export function failureProcess(code, tracer, serverId, msg, opts)
  *
  * @api private
  */
-var failover = function (code, tracer, serverId, msg, opts, cb)
+let failover = function (this:any, code: number, tracer: {servers: object}, serverId: string, msg: {serverType: string}, opts: object, cb: Function)
 {
-    var servers;
-    var self = this;
-    var counter = 0;
-    var success = true;
-    var serverType = msg.serverType;
+    let servers;
+    let self = this;
+    let counter = 0;
+    let success = true;
+    let serverType = msg.serverType;
     if (!tracer || !tracer.servers)
     {
         servers = self.serversMap[serverType];
@@ -65,7 +65,7 @@ var failover = function (code, tracer, serverId, msg, opts, cb)
         servers = tracer.servers;
     }
 
-    var index = servers.indexOf(serverId);
+    let index = servers.indexOf(serverId);
     if (index >= 0)
     {
         servers.splice(index, 1);
@@ -93,11 +93,11 @@ var failover = function (code, tracer, serverId, msg, opts, cb)
  *
  * @api private
  */
-var failsafe = function (code, tracer, serverId, msg, opts, cb)
+let failsafe = function (this:any, code: number, tracer: {[key:string]: any}, serverId: string, msg: {serverType: string}, opts: {[key:string]: any}, cb: Function)
 {
-    var self = this;
-    var retryTimes = opts.retryTimes || constants.DEFAULT_PARAM.FAILSAFE_RETRIES;
-    var retryConnectTime = opts.retryConnectTime || constants.DEFAULT_PARAM.FAILSAFE_CONNECT_TIME;
+    let self = this;
+    let retryTimes = opts.retryTimes || constants.DEFAULT_PARAM.FAILSAFE_RETRIES;
+    let retryConnectTime = opts.retryConnectTime || constants.DEFAULT_PARAM.FAILSAFE_CONNECT_TIME;
 
     if (!tracer.retryTimes)
     {
@@ -157,7 +157,7 @@ var failsafe = function (code, tracer, serverId, msg, opts, cb)
  *
  * @api private
  */
-var failback = function (code, tracer, serverId, msg, opts, cb)
+let failback = function (code: number, tracer: {[key:string]: any}, serverId: string, msg: {serverType: string}, opts: {[key:string]: any}, cb: Function)
 {
     // todo record message in background and send the message at timing
 };
@@ -174,7 +174,7 @@ var failback = function (code, tracer, serverId, msg, opts, cb)
  *
  * @api private
  */
-var failfast = function (code, tracer, serverId, msg, opts, cb)
+let failfast = function (code: number, tracer: {[key:string]: any}, serverId: string, msg: {serverType: string}, opts: {[key:string]: any}, cb: Function)
 {
     logger.error('rpc failed with error, remote server: %s, msg: %j, error code: %s', serverId, msg, code);
     cb && cb(new Error('rpc failed with error code: ' + code));
