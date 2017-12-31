@@ -311,7 +311,7 @@ export class RpcClient
  */
 let createStation = function (opts: RpcClientOpts)
 {
-    return Station.create(opts);
+    return Station.createMailStation(opts);
 };
 
 /**

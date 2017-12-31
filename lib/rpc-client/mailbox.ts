@@ -15,7 +15,7 @@ export type MailBoxFactory =  (serverInfo: {id: string, host: string, port:numbe
  * @param {Object} opts construct parameters
  * @return {Object} mailbox instancef
  */
-export function create (serverInfo: {id: string, host: string, port:number}, opts: Mailbox.MailBoxOpts)
+export function createMailBox (serverInfo: {id: string, host: string, port:number}, opts: Mailbox.MailBoxOpts)
 {
     // var mailbox = opts.mailbox || 'mqtt';
     // var Mailbox = null;

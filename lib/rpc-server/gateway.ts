@@ -1,4 +1,4 @@
-import * as defaultAcceptorFactory from './acceptor';
+import {createAcceptor} from './acceptor';
 import { EventEmitter } from 'events';
 import { Dispatcher, MsgPkg } from './dispatcher';
 import * as Loader from 'pinus-loader';
@@ -6,13 +6,14 @@ import * as utils from '../util/utils';
 import {Tracer} from '../util/tracer'
 import * as util from 'util';
 import * as fs from 'fs';
+import { AcceptorOpts } from './acceptors/mqtt-acceptor';
 
 export interface RpcServerOpts {
     port?: number|string,
     paths?: Array<RemoteServerCode>,
     context?: object,
     services?: object
-    acceptorFactory?: {create: (opts: RpcServerOpts, cb: Function) => any}
+    acceptorFactory?: typeof createAcceptor
 }
 
 export interface RemoteServerCode {
@@ -35,14 +36,14 @@ export class Gateway extends EventEmitter
         this.port = <number>opts.port || 3050;
         this.started = false;
         this.stoped = false;
-        let acceptorFactory: any = opts.acceptorFactory || defaultAcceptorFactory;
+        let acceptorFactory = opts.acceptorFactory || createAcceptor;
         this.services = opts.services;
         let dispatcher = new Dispatcher(this.services);
         if (!!this.opts.reloadRemotes)
         {
             this.watchServices(dispatcher);
         }
-        this.acceptor = acceptorFactory.create(opts, function (tracer: Tracer, msg: MsgPkg, cb: Function)
+        this.acceptor = acceptorFactory(opts as AcceptorOpts, function (tracer: Tracer, msg: MsgPkg, cb: Function)
         {
             dispatcher.route(tracer, msg, cb);
         });

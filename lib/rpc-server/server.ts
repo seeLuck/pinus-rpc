@@ -35,7 +35,7 @@ let createNamespace = function (namespace: string, proxies: {[key:string]: any})
  *                       opts.port {Number|String} rpc server listen port
  *                       opts.paths {Array} remote service code paths, [{namespace, path}, ...]
  *                       opts.context {Object} context for remote service
- *                       opts.acceptorFactory {Object} (optionals)acceptorFactory.create(opts, cb)
+ *                       opts.acceptorFactory {Object} (optionals)acceptorFactory(opts, cb)
  * @return {Object}      rpc server instance
  */
 
