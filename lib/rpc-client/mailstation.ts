@@ -22,12 +22,12 @@ export interface ServerInfo
 { 
     id: string, 
     host: string, 
-    port: string, 
+    port: number, 
     serverType: string,
     weight ?: number,
 }
 
-export type RpcFilterFunction = (serverId : string, msg : any, opts : any, cb : (target: string, message: any, options: any)=>void)=>void;
+export type RpcFilterFunction = (serverId : string, msg : any, opts : any, next : (target?: Error | string, message?: any, options?: any)=>void)=>void;
 export interface IRpcFilter
 {
     name : string;
@@ -432,7 +432,7 @@ export class MailStation extends EventEmitter
 /**
  * Do before or after filter
  */
-let doFilter = function (this:any, tracer: Tracer, err: Error, serverId: string, msg: MailBoxMessage, opts: object, filters: Array<RpcFilter>, index: number, operate: 'before' | 'after', cb:Function)
+let doFilter = function (tracer: Tracer, err: Error, serverId: string, msg: MailBoxMessage, opts: object, filters: Array<RpcFilter>, index: number, operate: 'before' | 'after', cb:Function)
 {
     if (index < filters.length)
     {
@@ -443,7 +443,6 @@ let doFilter = function (this:any, tracer: Tracer, err: Error, serverId: string,
         cb(tracer, err, serverId, msg, opts);
         return;
     }
-    let self = this;
     let filter = filters[index];
     if (typeof filter === 'function')
     {

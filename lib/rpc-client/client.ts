@@ -32,15 +32,15 @@ export type Proxies = {[namespace:string]:{[serverType:string]:{[attr:string]:Fu
 
 export interface RpcClientOpts 
 {
-    context: string,
-    routeContext: RouteContext,
-    router: Router,
-    routerType: string,
-    rpcDebugLog: boolean,
-    clientId: string,
-    servers: {serverType: Array<ServerInfo>}, 
-    mailboxFactory: MailBoxFactory,
-    rpcLogger: Logger,
+    context?: any,
+    routeContext?: RouteContext,
+    router?: Router,
+    routerType?: string,
+    rpcDebugLog?: boolean,
+    clientId?: string,
+    servers?: {serverType: Array<ServerInfo>}, 
+    mailboxFactory?: MailBoxFactory,
+    rpcLogger?: Logger,
     station ?: MailStation,
     hashFieldIndex ?: number;
 }
@@ -65,7 +65,7 @@ export class RpcClient
     router: Router;
     routerType: string;
     rpcDebugLog: boolean;
-    opts: Partial<RpcClientOpts>;
+    opts: RpcClientOpts;
     proxies: Proxies;
     _station: MailStation;
     state: number;
@@ -73,7 +73,7 @@ export class RpcClient
     wrrParam ?: {[serverType:string] : {index:number,weight : number}};
     chParam ?:  {[serverType:string] : {consistentHash:ConsistentHash}};
 
-    constructor(opts?: Partial<RpcClientOpts>)
+    constructor(opts?: RpcClientOpts)
     {
         opts = opts || {};
         this._context = opts.context;
@@ -309,7 +309,7 @@ export class RpcClient
  *
  * @api private
  */
-let createStation = function (opts: Partial<RpcClientOpts>)
+let createStation = function (opts: RpcClientOpts)
 {
     return Station.create(opts);
 };

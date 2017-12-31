@@ -8,10 +8,10 @@ import * as util from 'util';
 import * as fs from 'fs';
 
 export interface RpcServerOpts {
-    port: number|string,
-    paths: Array<RemoteServerCode>,
-    context: object,
-    services: object
+    port?: number|string,
+    paths?: Array<RemoteServerCode>,
+    context?: object,
+    services?: object
     acceptorFactory?: {create: (opts: RpcServerOpts, cb: Function) => any}
 }
 
