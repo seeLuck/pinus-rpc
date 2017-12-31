@@ -18,7 +18,7 @@ export interface MailStationOpts {
     pendingSize?: number
 }
 
-export interface ServerInfo
+export interface RpcServerInfo
 { 
     id: string, 
     host: string, 
@@ -44,7 +44,7 @@ export type MailStationErrorHandler = (err : Error, serverId : string, msg : any
 export class MailStation extends EventEmitter
 {
 
-    servers : {[serverId:string] : ServerInfo} = {}; // remote server info map, key: server id, value: info
+    servers : {[serverId:string] : RpcServerInfo} = {}; // remote server info map, key: server id, value: info
     serversMap : {[serverType:string] : string[]} = {}; // remote server info map, key: serverType, value: servers array
     onlines : {[serverId:string] : number} = {}; // remote server online map, key: server id, value: 0/offline 1/online
 
@@ -139,7 +139,7 @@ export class MailStation extends EventEmitter
      *
      * @param {Object} serverInfo server info such as {id, host, port}
      */
-    addServer(serverInfo: ServerInfo)
+    addServer(serverInfo: RpcServerInfo)
     {
         if (!serverInfo || !serverInfo.id)
         {
@@ -168,7 +168,7 @@ export class MailStation extends EventEmitter
      *
      * @param {Array} serverInfos server info list
      */
-    addServers(serverInfos: Array<ServerInfo>)
+    addServers(serverInfos: Array<RpcServerInfo>)
     {
         if (!serverInfos || !serverInfos.length)
         {
@@ -232,7 +232,7 @@ export class MailStation extends EventEmitter
      *
      * @param {Array} serverInfos server info list
      */
-    replaceServers(this:any, serverInfos: Array<ServerInfo>)
+    replaceServers(this:any, serverInfos: Array<RpcServerInfo>)
     {
         this.clearStation();
         if (!serverInfos || !serverInfos.length)

@@ -9,7 +9,7 @@ import * as utils from '../util/utils';
 import * as Proxy from '../util/proxy';
 import * as router from './router';
 import * as async from 'async';
-import {ServerInfo, MailStation, MailStationErrorHandler, RpcFilter} from './mailstation'
+import {RpcServerInfo, MailStation, MailStationErrorHandler, RpcFilter} from './mailstation'
 import { ErrorCallback } from 'async';
 import { Logger } from 'log4js';
 import { MailBoxFactory } from './mailbox';
@@ -25,7 +25,7 @@ let STATE_CLOSED = 3; // client has closed
 export type Router = typeof router.df | {route : typeof router.df};
 export interface RouteContext
 {
-    getServersByType(serverType:string):ServerInfo[];
+    getServersByType(serverType:string):RpcServerInfo[];
 }
 
 export type Proxies = {[namespace:string]:{[serverType:string]:{[attr:string]:Function}}}
@@ -38,7 +38,7 @@ export interface RpcClientOpts
     routerType?: string,
     rpcDebugLog?: boolean,
     clientId?: string,
-    servers?: {serverType: Array<ServerInfo>}, 
+    servers?: {serverType: Array<RpcServerInfo>}, 
     mailboxFactory?: MailBoxFactory,
     rpcLogger?: Logger,
     station ?: MailStation,
@@ -179,7 +179,7 @@ export class RpcClient
      *
      * @param {Object} server new server information
      */
-    addServer(server: ServerInfo)
+    addServer(server: RpcServerInfo)
     {
         this._station.addServer(server);
     };
@@ -189,7 +189,7 @@ export class RpcClient
      *
      * @param {Array} servers server info list
      */
-    addServers(servers: ServerInfo[])
+    addServers(servers: RpcServerInfo[])
     {
         this._station.addServers(servers);
     };
@@ -219,7 +219,7 @@ export class RpcClient
      *
      * @param {Array} servers server info list
      */
-    replaceServers(servers: ServerInfo[])
+    replaceServers(servers: RpcServerInfo[])
     {
         this._station.replaceServers(servers);
     };

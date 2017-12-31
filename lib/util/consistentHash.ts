@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { ServerInfo } from '../rpc-client/mailstation';
+import { RpcServerInfo } from '../rpc-client/mailstation';
 
 
 let getKeysLength = function<T>(map: {[key:string]: T})
@@ -21,13 +21,13 @@ export class ConsistentHash
 
     ring: {[key:string]: any} = {};
     keys: {[key:string]: any} = [];
-    nodes: Array<ServerInfo> = [];
+    nodes: Array<RpcServerInfo> = [];
     opts: any;
     replicas: number;
     algorithm: string;
     station: any;
 
-    constructor(nodes: Array<ServerInfo>, opts: any)
+    constructor(nodes: Array<RpcServerInfo>, opts: any)
     {
         this.opts = opts || {};
         this.replicas = this.opts.replicas || 100;
@@ -44,7 +44,7 @@ export class ConsistentHash
     };
 
 
-    addNode(node: ServerInfo)
+    addNode(node: RpcServerInfo)
     {
         this.nodes.push(node);
         for (let i = 0; i < this.replicas; i++)
@@ -56,7 +56,7 @@ export class ConsistentHash
         this.keys.sort();
     };
 
-    removeNode(node: ServerInfo)
+    removeNode(node: RpcServerInfo)
     {
         for (let i = 0; i < this.nodes.length; i++)
         {
