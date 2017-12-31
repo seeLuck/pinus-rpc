@@ -1,5 +1,5 @@
 
-export function invokeCallback(cb : Function)
+export function invokeCallback(cb : Function, err:Error)
 {
     if (typeof cb === 'function')
     {

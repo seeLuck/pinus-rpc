@@ -1,4 +1,4 @@
-export let constants = {
+export let constants:{[key: string]: any} = {
     FAIL_MODE: {
         FAILOVER: 'failover',
         FAILFAST: 'failfast',

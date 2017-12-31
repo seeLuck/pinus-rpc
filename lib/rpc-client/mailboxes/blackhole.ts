@@ -1,11 +1,12 @@
-import { getLogger } from 'pomelo-logger'
-let logger = getLogger('pomelo-rpc', 'blackhole');
+import { getLogger } from 'pinus-logger'
+let logger = getLogger('pinus-rpc', 'blackhole');
 import { EventEmitter } from 'events';
 import * as utils from '../../util/utils';
+import { Tracer } from '../../util/tracer';
 
 export class Blackhole extends EventEmitter
 {
-	connect(tracer, cb)
+	connect(tracer: Tracer, cb: (parameter:Error)=>void)
 	{
 		tracer && tracer.info('client', __filename, 'connect', 'connect to blackhole');
 		process.nextTick(function ()
@@ -14,9 +15,9 @@ export class Blackhole extends EventEmitter
 		});
 	};
 
-	close(cb) { };
+	close(cb: Function) { };
 
-	send(tracer, msg, opts, cb)
+	send(tracer: Tracer, msg: object, opts: object, cb: Function)
 	{
 		tracer && tracer.info('client', __filename, 'send', 'send rpc msg to blackhole');
 		logger.info('message into blackhole: %j', msg);
