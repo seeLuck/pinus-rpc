@@ -12,7 +12,7 @@ let logger = getLogger('pinus-rpc', 'rpc-proxy');
  *           opts.attach {Object} attach parameter pass to proxyCB
  * @return {Object}      proxy instance
  */
-export function create(opts : {origin : any , proxyCB : Function , service : string , attach : Object})
+export function create(opts : {origin : any , proxyCB : ProxyCallback , service : string , attach : any})
 {
     if (!opts || !opts.origin)
     {
@@ -29,10 +29,10 @@ export function create(opts : {origin : any , proxyCB : Function , service : str
     return genObjectProxy(opts.service, opts.origin, opts.attach, opts.proxyCB);
 };
 
-let genObjectProxy = function (serviceName : string, origin : any, attach : Object, proxyCB : Function)
+let genObjectProxy = function (serviceName : string, origin : any, attach : any, proxyCB : ProxyCallback)
 {
     //generate proxy for function field
-    let res : {[key:string] : Function} = {};
+    let res : {[key:string] : Proxy} = {};
     let proto = listEs6ClassMethods(origin);
     for (let field of proto)
     {
@@ -42,6 +42,13 @@ let genObjectProxy = function (serviceName : string, origin : any, attach : Obje
     return res;
 };
 
+export interface Proxy
+{
+    (...args:any[]):Promise<any>;
+    toServer(serverId:string , ...args:any[]):Promise<any>;
+}
+
+export type ProxyCallback = (serviceName : string, methodName : string, args : any[], attach : any, isToSpecifiedServer ?: boolean)=>Promise<any>;
 /**
  * Generate prxoy for function type field
  *
@@ -53,9 +60,9 @@ let genObjectProxy = function (serviceName : string, origin : any, attach : Obje
  * @param proxyCB {Functoin} proxy callback function
  * @returns function proxy
  */
-let genFunctionProxy = function (serviceName : string, methodName : string, origin : any, attach : Object, proxyCB : Function)
+let genFunctionProxy = function (serviceName : string, methodName : string, origin : any, attach : boolean, proxyCB : ProxyCallback)
 {
-    return (function ()
+    return (function () : Proxy
     {
         let proxy : any = function ()
         {

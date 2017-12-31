@@ -11,19 +11,27 @@ import * as net from 'net';
 export interface MailBoxPkg 
 {
     id: string & number;
-    resp: string;
+    resp: any;
     source: string;
     seq: number;
 }
 
 export interface MailBoxOpts 
 {
-    bufferMsg: any,
+    bufferMsg: boolean,
     keepalive: number,
     interval: number,
     timeout: number,
     context: any
 }
+export interface MailBoxMessage
+{
+    service: string;
+    method: string;
+    args: any[];
+}
+
+export type MailBoxTimeoutCallback = (tracer : Tracer , err : Error , resp ?: any)=>void;
 
 let CONNECT_TIMEOUT = 2000;
 
@@ -52,14 +60,14 @@ export class MailBox extends EventEmitter
     id: string;
     host: string;
     port: number;
-    requests: {[id:number]: any} = {};
-    timeout: {[id:number]: any} = {};
-    queue: any = [];
-    bufferMsg: any;
+    requests: {[id:number]: MailBoxTimeoutCallback} = {};
+    timeout: {[id:number]: NodeJS.Timer} = {};
+    queue: MailBoxMessage[] = [];
+    bufferMsg: boolean;
     keepalive: number;
     interval: number;
     timeoutValue: any;
-    keepaliveTimer: any = null;
+    keepaliveTimer: NodeJS.Timer;
     lastPing = -1;
     lastPong = -1;
     connected = false;
@@ -69,7 +77,7 @@ export class MailBox extends EventEmitter
     socket: any;
     _interval: NodeJS.Timer;
 
-    connect(tracer: Tracer, cb: Function)
+    connect(tracer: Tracer, cb: (err?:Error)=>void)
     {
         tracer && tracer.info('client', __filename, 'connect', 'mqtt-mailbox try to connect');
         if (this.connected)
@@ -181,7 +189,7 @@ export class MailBox extends EventEmitter
     * @param opts {} attach info to send method
     * @param cb declaration decided by remote interface
     */
-    send(tracer: Tracer, msg: {service: string, method: string, args: any[]}, opts: any, cb: Function)
+    send(tracer: Tracer, msg: MailBoxMessage, opts: any, cb: MailBoxTimeoutCallback)
     {
         tracer && tracer.info('client', __filename, 'send', 'mqtt-mailbox try to send');
         if (!this.connected)
@@ -202,7 +210,7 @@ export class MailBox extends EventEmitter
         this.requests[id] = cb;
         this.setCbTimeout( id, tracer, cb);
 
-        let pkg;
+        let pkg : any;
         if (tracer && tracer.isEnabled)
         {
             pkg = {
@@ -270,7 +278,7 @@ export class MailBox extends EventEmitter
             this.lastPing = Date.now();
         }
     }
-    enqueue(msg: object)
+    enqueue(msg: MailBoxMessage)
     {
         this.queue.push(msg);
     };
