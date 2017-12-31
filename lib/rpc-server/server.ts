@@ -39,7 +39,7 @@ let createNamespace = function (namespace: string, proxies: {[key:string]: any})
  * @return {Object}      rpc server instance
  */
 
-export function create(opts: Gateway.RpcServerOpts)
+export function createServer(opts: Gateway.RpcServerOpts)
 {
     if (!opts || !opts.port || opts.port < 0 || !opts.paths)
     {
@@ -47,7 +47,7 @@ export function create(opts: Gateway.RpcServerOpts)
     }
     let services = loadRemoteServices(opts.paths, opts.context);
     opts.services = services;
-    let gateway = Gateway.create(opts);
+    let gateway = Gateway.createGateway(opts);
     return gateway;
 };
 

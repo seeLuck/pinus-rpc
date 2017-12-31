@@ -112,7 +112,7 @@ export class Gateway extends EventEmitter
  *
  * @param opts {services: {rpcServices}, connector:conFactory(optional), router:routeFunction(optional)}
  */
-export function create(opts: RpcServerOpts)
+export function createGateway(opts: RpcServerOpts)
 {
     if (!opts || !opts.services)
     {

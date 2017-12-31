@@ -549,7 +549,7 @@ let insertProxy = function (proxies: Proxies, namespace: string, serverType: str
  *                       opts.mailBoxFactory: (optional) mail box factory instance.
  * @return {Object}      client instance.
  */
-export function create(opts: RpcClientOpts)
+export function createClient(opts: RpcClientOpts)
 {
     return new RpcClient(opts);
 };
